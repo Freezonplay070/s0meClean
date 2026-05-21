@@ -58,6 +58,221 @@ class C:
     RED      = "#ff4664"
     PURPLE   = "#a855f7"
 
+
+# ═══════════════════════════════════════════════════
+#  i18n — RUSSIAN + ENGLISH
+# ═══════════════════════════════════════════════════
+LANG = "EN"
+
+STRINGS = {
+    # Header
+    "subtitle":       {"EN": "// CYBER DISK UTILITIES",       "RU": "// КИБЕР ДИСКОВЫЕ УТИЛИТЫ"},
+    "drive":          {"EN": "DRIVE",                         "RU": "ДИСК"},
+    "total":          {"EN": "TOTAL",                         "RU": "ВСЕГО"},
+    "used":           {"EN": "USED",                          "RU": "ЗАНЯТО"},
+    "free":           {"EN": "FREE",                          "RU": "СВОБОДНО"},
+    "admin_yes":      {"EN": "● ADMIN",                       "RU": "● АДМИН"},
+    "admin_no":       {"EN": "● NO ADMIN",                    "RU": "● НЕТ ПРАВ"},
+    # Sidebar tabs
+    "tab_clean":      {"EN": "CLEANING",                      "RU": "ОЧИСТКА"},
+    "tab_opt":        {"EN": "OPTIMIZE",                      "RU": "ОПТИМИЗАЦИЯ"},
+    "tab_browser":    {"EN": "BROWSERS",                      "RU": "БРАУЗЕРЫ"},
+    "tab_custom":     {"EN": "CUSTOM SCAN",                   "RU": "СВОЙ СКАН"},
+    "tab_settings":   {"EN": "SETTINGS",                      "RU": "НАСТРОЙКИ"},
+    "scan_actions":   {"EN": "// SCAN ACTIONS",               "RU": "// ДЕЙСТВИЯ"},
+    "github_btn":     {"EN": "★  GITHUB",                     "RU": "★  GITHUB"},
+    "check_updates":  {"EN": "↻  CHECK UPDATES",              "RU": "↻  ОБНОВЛЕНИЯ"},
+    # Clean page
+    "results":        {"EN": "// RESULTS",                    "RU": "// РЕЗУЛЬТАТЫ"},
+    "analysis":       {"EN": "ANALYSIS // RECOMMENDATIONS",   "RU": "АНАЛИЗ // РЕКОМЕНДАЦИИ"},
+    "start_hint":     {"EN": "Select a scan action from the sidebar to begin.",
+                       "RU": "Выберите действие сканирования в боковой панели."},
+    "activity":       {"EN": "ACTIVITY",                      "RU": "АКТИВНОСТЬ"},
+    "nothing_sel":    {"EN": "Nothing selected",              "RU": "Ничего не выбрано"},
+    "delete_sel":     {"EN": "🗑  DELETE SELECTED",            "RU": "🗑  УДАЛИТЬ ВЫБРАННОЕ"},
+    "open_explorer":  {"EN": "📂  OPEN IN EXPLORER",          "RU": "📂  В ПРОВОДНИКЕ"},
+    "select_all":     {"EN": "SELECT ALL (Ctrl+A)",           "RU": "ВЫБРАТЬ ВСЁ (Ctrl+A)"},
+    "scanning":       {"EN": "Scanning...",                   "RU": "Сканирование..."},
+    "col_size":       {"EN": "SIZE",                          "RU": "РАЗМЕР"},
+    "col_path":       {"EN": "PATH",                          "RU": "ПУТЬ"},
+    "col_type":       {"EN": "TYPE",                          "RU": "ТИП"},
+    # Scan sidebar actions
+    "quick_audit":    {"EN": "⚡ QUICK AUDIT",                "RU": "⚡ БЫСТРЫЙ АУДИТ"},
+    "largest_folders": {"EN": "📁 Largest folders",           "RU": "📁 Крупные папки"},
+    "phantom_progs":  {"EN": "👻 Phantom programs",           "RU": "👻 Фантомные программы"},
+    "orphan_folders": {"EN": "🔗 Orphan folders",             "RU": "🔗 Сиротские папки"},
+    "large_files":    {"EN": "📦 Large files (>500MB)",       "RU": "📦 Большие файлы (>500МБ)"},
+    "installed_progs": {"EN": "💾 Installed programs",        "RU": "💾 Установленные программы"},
+    "junk_temp":      {"EN": "🗑 Junk (Temp, caches)",        "RU": "🗑 Мусор (Temp, кэш)"},
+    "recycle_bin":    {"EN": "♻ Recycle bin",                  "RU": "♻ Корзина"},
+    "hiberfil":       {"EN": "💤 Hiberfil.sys",               "RU": "💤 Hiberfil.sys"},
+    "open_opt_tab":   {"EN": "▶ Open Optimization tab",      "RU": "▶ Вкладка Оптимизации"},
+    # Optimization page
+    "opt_title":      {"EN": "// WINDOWS OPTIMIZATION",       "RU": "// ОПТИМИЗАЦИЯ WINDOWS"},
+    "opt_desc":       {"EN": "Choose a level. Check the actions you want, then click APPLY.",
+                       "RU": "Выберите уровень. Отметьте нужные действия и нажмите ПРИМЕНИТЬ."},
+    "apply":          {"EN": "APPLY  ▶",                      "RU": "ПРИМЕНИТЬ  ▶"},
+    "quick_actions":  {"EN": "QUICK ACTIONS",                 "RU": "БЫСТРЫЕ ДЕЙСТВИЯ"},
+    # Opt presets
+    "opt_light":      {"EN": "LIGHT",                         "RU": "ЛЁГКИЙ"},
+    "opt_light_d":    {"EN": "Safe tweaks. Speed boost without breaking anything.",
+                       "RU": "Безопасные настройки. Ускорение без риска."},
+    "opt_medium":     {"EN": "MEDIUM",                        "RU": "СРЕДНИЙ"},
+    "opt_medium_d":   {"EN": "Disables telemetry, ads, Cortana. Noticeable speedup.",
+                       "RU": "Отключает телеметрию, рекламу, Cortana. Заметное ускорение."},
+    "opt_heavy":      {"EN": "HEAVY",                         "RU": "ТЯЖЁЛЫЙ"},
+    "opt_heavy_d":    {"EN": "Maximum performance. Disables services, effects. For power users!",
+                       "RU": "Максимум производительности. Отключает службы и эффекты. Для опытных!"},
+    # Opt actions
+    "oa_temp":        {"EN": "Clear Temp + Prefetch",         "RU": "Очистить Temp + Prefetch"},
+    "oa_menu":        {"EN": "Fast menu animation (delay=0)", "RU": "Быстрая анимация меню (delay=0)"},
+    "oa_dns":         {"EN": "Flush DNS cache",               "RU": "Очистить DNS кэш"},
+    "oa_fastboot":    {"EN": "Enable fast startup",           "RU": "Включить быстрый запуск"},
+    "oa_telemetry":   {"EN": "Disable Windows telemetry",     "RU": "Отключить телеметрию Windows"},
+    "oa_cortana":     {"EN": "Disable Cortana",               "RU": "Отключить Cortana"},
+    "oa_ads":         {"EN": "Disable advertising ID",        "RU": "Отключить рекламный ID"},
+    "oa_tips":        {"EN": "Disable Tips & Suggestions",    "RU": "Отключить советы и предложения"},
+    "oa_eventlogs":   {"EN": "Clear Windows Event logs",      "RU": "Очистить логи событий Windows"},
+    "oa_visual":      {"EN": "Visual effects → Performance",  "RU": "Эффекты → Производительность"},
+    "oa_sysmain":     {"EN": "Disable SysMain (Superfetch)",  "RU": "Отключить SysMain (Superfetch)"},
+    "oa_wsearch":     {"EN": "Disable Windows Search indexing","RU": "Отключить индексацию Windows Search"},
+    "oa_hibernate":   {"EN": "Disable Hibernation (~6 GB)",   "RU": "Отключить гибернацию (~6 ГБ)"},
+    "oa_power":       {"EN": "Power plan → High Performance", "RU": "Схема питания → Высокая производительность"},
+    "oa_diagtrack":   {"EN": "Disable DiagTrack service",     "RU": "Отключить службу DiagTrack"},
+    # Quick actions
+    "qa_chkdsk":      {"EN": "chkdsk C: /scan",              "RU": "chkdsk C: /scan"},
+    "qa_cleanmgr":    {"EN": "Disk Cleanup (cleanmgr)",       "RU": "Очистка диска (cleanmgr)"},
+    "qa_defrag":      {"EN": "Defragment (dfrgui)",           "RU": "Дефрагментация (dfrgui)"},
+    "qa_startup":     {"EN": "Task Manager → Startup",        "RU": "Диспетчер задач → Автозагрузка"},
+    "qa_services":    {"EN": "Services (services.msc)",       "RU": "Службы (services.msc)"},
+    # Browser page
+    "browser_title":  {"EN": "// BROWSER CACHE CLEANUP",      "RU": "// ОЧИСТКА КЭША БРАУЗЕРОВ"},
+    "browser_desc":   {"EN": "Scan and clean browser caches. Close browsers before cleaning for best results.",
+                       "RU": "Сканирование и очистка кэша браузеров. Закройте браузеры для лучшего результата."},
+    "scan_browsers":  {"EN": "🔍  SCAN BROWSER CACHES",       "RU": "🔍  СКАНИРОВАТЬ КЭШ БРАУЗЕРОВ"},
+    "browser_hint":   {"EN": "Results will appear in the CLEANING tab after scan completes.",
+                       "RU": "Результаты появятся на вкладке ОЧИСТКА после завершения скана."},
+    # Custom scan page
+    "custom_title":   {"EN": "// CUSTOM SCAN",                "RU": "// СВОЙ СКАН"},
+    "custom_desc":    {"EN": "Pick a folder — shows largest subfolders and files inside.",
+                       "RU": "Выберите папку — покажет крупнейшие подпапки и файлы внутри."},
+    "path_label":     {"EN": "Path:",                         "RU": "Путь:"},
+    "pick_folder":    {"EN": "PICK FOLDER",                   "RU": "ВЫБРАТЬ ПАПКУ"},
+    "scan_go":        {"EN": "SCAN  ▶",                       "RU": "СКАН  ▶"},
+    "custom_hint":    {"EN": "Results will appear in the CLEANING tab after scan.",
+                       "RU": "Результаты появятся на вкладке ОЧИСТКА после скана."},
+    # Settings page
+    "settings_title": {"EN": "// SETTINGS",                   "RU": "// НАСТРОЙКИ"},
+    "about":          {"EN": "ABOUT",                         "RU": "О ПРОГРАММЕ"},
+    "about_text":     {"EN": "s0meClean? — Cyberpunk Disk Cleaner & Windows Optimizer.\n"
+                             "Scan junk, phantom programs, orphan folders, browser caches.\n"
+                             "Optimize Windows with 3 preset levels. Open source, MIT License.\n"
+                             "by solevoyq",
+                       "RU": "s0meClean? — Кибер-утилита очистки диска и оптимизации Windows.\n"
+                             "Сканирование мусора, фантомных программ, сиротских папок, кэша.\n"
+                             "Оптимизация Windows в 3 уровнях. Открытый код, лицензия MIT.\n"
+                             "by solevoyq"},
+    "access_key":     {"EN": "ACCESS KEY",                    "RU": "КЛЮЧ ДОСТУПА"},
+    "activate":       {"EN": "ACTIVATE",                      "RU": "АКТИВИРОВАТЬ"},
+    "key_none":       {"EN": "STATUS: Not activated",         "RU": "СТАТУС: Не активирован"},
+    "key_active":     {"EN": "STATUS: ACTIVE  ·  Key:",       "RU": "СТАТУС: АКТИВЕН  ·  Ключ:"},
+    "key_invalid":    {"EN": "STATUS: Invalid key format",    "RU": "СТАТУС: Неверный формат ключа"},
+    "language":       {"EN": "LANGUAGE",                      "RU": "ЯЗЫК"},
+    "lang_restart":   {"EN": "Language will change after restart.",
+                       "RU": "Язык изменится после перезапуска."},
+    # Status bar
+    "status":         {"EN": "STATUS",                        "RU": "СТАТУС"},
+    "ready":          {"EN": "Ready",                         "RU": "Готово"},
+    "done":           {"EN": "Done",                          "RU": "Готово"},
+    # Dialogs
+    "confirm_del_t":  {"EN": "Confirm Deletion",              "RU": "Подтвердите удаление"},
+    "confirm_del_m":  {"EN": "Delete {n} items? This cannot be undone for files.\n"
+                             "Phantom entries will only be removed from registry.",
+                       "RU": "Удалить {n} элементов? Это нельзя отменить для файлов.\n"
+                             "Фантомные записи будут удалены только из реестра."},
+    "result_title":   {"EN": "Result",                        "RU": "Результат"},
+    "result_msg":     {"EN": "Success: {ok}\nErrors: {fail}\nFreed: {freed}",
+                       "RU": "Успешно: {ok}\nОшибки: {fail}\nОсвобождено: {freed}"},
+    "confirm_title":  {"EN": "Confirm",                       "RU": "Подтверждение"},
+    "confirm_opt":    {"EN": "Apply {n} actions from '{title}'?",
+                       "RU": "Применить {n} действий из '{title}'?"},
+    "opt_done_t":     {"EN": "Done",                          "RU": "Готово"},
+    "opt_done_m":     {"EN": "Applied: {ok}\nErrors: {fail}\n\nSome changes require a reboot.",
+                       "RU": "Применено: {ok}\nОшибки: {fail}\n\nНекоторые изменения требуют перезагрузки."},
+    "select_folder":  {"EN": "Select Folder",                 "RU": "Выберите папку"},
+    # Update
+    "checking_upd":   {"EN": "Checking for updates...",       "RU": "Проверка обновлений..."},
+    "up_to_date":     {"EN": "Up to date",                    "RU": "Актуальная версия"},
+    "upd_available_t": {"EN": "Update Available",             "RU": "Доступно обновление"},
+    "upd_available_m": {"EN": "New version: v{ver}\nCurrent: v{cur}\n\nDownload and update?",
+                        "RU": "Новая версия: v{ver}\nТекущая: v{cur}\n\nСкачать и обновить?"},
+    "downloading":    {"EN": "Downloading update...",         "RU": "Скачивание обновления..."},
+    "updated_t":      {"EN": "Updated",                       "RU": "Обновлено"},
+    "updated_m":      {"EN": "Update installed. Restart the app.",
+                       "RU": "Обновление установлено. Перезапустите приложение."},
+    "upd_installed":  {"EN": "Update installed — restart required",
+                       "RU": "Обновление установлено — требуется перезапуск"},
+    "upd_failed":     {"EN": "Update failed",                 "RU": "Ошибка обновления"},
+    # Scan results
+    "items_found":    {"EN": "{n} items found",               "RU": "{n} элементов найдено"},
+    "items_size":     {"EN": "{n} items  ·  {sz}",            "RU": "{n} элементов  ·  {sz}"},
+    "sel_items":      {"EN": "Selected: {n} items · {sz}",    "RU": "Выбрано: {n} элементов · {sz}"},
+    "scanning_t":     {"EN": "Scanning: {t}...",              "RU": "Сканирование: {t}..."},
+    # Scan worker results (recommendations)
+    "rec_junk":       {"EN": "Found {sz} of junk. Select all → Delete.",
+                       "RU": "Найдено {sz} мусора. Выберите все → Удалить."},
+    "rec_folders":    {"EN": "Found {n} large folders ({sz})",
+                       "RU": "Найдено {n} крупных папок ({sz})"},
+    "rec_files":      {"EN": "Found {n} files > 500 MB. .sys files must NOT be deleted.",
+                       "RU": "Найдено {n} файлов > 500 МБ. Файлы .sys удалять НЕЛЬЗЯ."},
+    "rec_no_phantom": {"EN": "No phantom programs found — registry is clean.",
+                       "RU": "Фантомных программ нет — реестр чист."},
+    "rec_phantom":    {"EN": "Found {n} phantom entries. Select all → Delete to clean registry.",
+                       "RU": "Найдено {n} фантомных записей. Выберите все → Удалить для очистки."},
+    "rec_orphans":    {"EN": "Found {n} orphan folders ({sz})",
+                       "RU": "Найдено {n} сиротских папок ({sz})"},
+    "rec_installed":  {"EN": "Found {n} installed programs (sorted by size)",
+                       "RU": "Найдено {n} установленных программ (по размеру)"},
+    "rec_recycle":    {"EN": "Recycle bin: {sz}",             "RU": "Корзина: {sz}"},
+    "rec_hiber_off":  {"EN": "Hibernation is already disabled.",
+                       "RU": "Гибернация уже отключена."},
+    "rec_hiber_on":   {"EN": "hiberfil.sys = {sz}. Will run: powercfg /h off",
+                       "RU": "hiberfil.sys = {sz}. Будет выполнено: powercfg /h off"},
+    "rec_hiber_err":  {"EN": "Cannot read hiberfil.sys",     "RU": "Не удалось прочитать hiberfil.sys"},
+    "rec_browser":    {"EN": "Browser caches: {sz}",         "RU": "Кэш браузеров: {sz}"},
+    "rec_audit":      {"EN": "Quick audit complete. Select all (Ctrl+A) → Delete Selected.",
+                       "RU": "Быстрый аудит завершён. Выберите все (Ctrl+A) → Удалить выбранное."},
+    "rec_custom":     {"EN": "Custom scan: {n} items, {sz}",
+                       "RU": "Свой скан: {n} элементов, {sz}"},
+    "rec_path_err":   {"EN": "Path does not exist",          "RU": "Путь не существует"},
+}
+
+
+def T(key, **kw):
+    """Translate string by key using current LANG."""
+    s = STRINGS.get(key, {}).get(LANG, key)
+    if kw:
+        try:
+            return s.format(**kw)
+        except (KeyError, IndexError):
+            return s
+    return s
+
+
+def _load_language():
+    """Load language preference from config.json."""
+    global LANG
+    cfg = os.path.join(app_dir(), "config.json")
+    try:
+        if os.path.exists(cfg):
+            with open(cfg, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            lang = data.get("language", "EN").upper()
+            if lang in ("RU", "EN"):
+                LANG = lang
+    except Exception:
+        pass
+
 # ═══════════════════════════════════════════════════
 #  ADMIN CHECK
 # ═══════════════════════════════════════════════════
@@ -186,7 +401,7 @@ class ScanWorker(QThread):
                 if sz > 1024 * 1024:
                     self._emit(p, sz, name, "junk")
                     total_freed += sz
-        self.finished_scan.emit(f"Found {format_size(total_freed)} of junk. Select all → Delete.")
+        self.finished_scan.emit(T("rec_junk", sz=format_size(total_freed)))
 
     # ──────────── LARGE FOLDERS ────────────
     def _scan_largefolders(self):
@@ -220,7 +435,7 @@ class ScanWorker(QThread):
             self._emit(p, sz, "Folder", "folder")
         self.progress.emit(100, f"Done. Found: {len(items[:60])}")
         total_sz = sum(s for _, s in items[:60])
-        self.finished_scan.emit(f"Found {len(items[:60])} large folders ({format_size(total_sz)})")
+        self.finished_scan.emit(T("rec_folders", n=len(items[:60]), sz=format_size(total_sz)))
 
     # ──────────── LARGE FILES ────────────
     def _scan_largefiles(self):
@@ -250,7 +465,7 @@ class ScanWorker(QThread):
                     ".pak": "Game resource", ".vhd": "VHD", ".log": "Log"}.get(ext, "File")
             self._emit(fp, sz, note, "file")
         self.progress.emit(100, f"Done. Files: {len(found[:60])}")
-        self.finished_scan.emit(f"Found {len(found[:60])} files > 500 MB. .sys files must NOT be deleted.")
+        self.finished_scan.emit(T("rec_files", n=len(found[:60])))
 
     # ──────────── PHANTOMS ────────────
     def _scan_phantoms(self):
@@ -298,9 +513,9 @@ class ScanWorker(QThread):
                     self._log(f"PHANTOM: {dn}")
         self.progress.emit(100, f"Phantoms: {found}")
         if found == 0:
-            self.finished_scan.emit("No phantom programs found — registry is clean.")
+            self.finished_scan.emit(T("rec_no_phantom"))
         else:
-            self.finished_scan.emit(f"Found {found} phantom entries. Select all → Delete to clean registry.")
+            self.finished_scan.emit(T("rec_phantom", n=found))
 
     # ──────────── ORPHAN FOLDERS ────────────
     def _scan_orphans(self):
@@ -353,7 +568,7 @@ class ScanWorker(QThread):
         for p, sz in orphans:
             self._emit(p, sz, "No uninstaller / App Paths", "orphan")
         total_sz = sum(s for _, s in orphans)
-        self.finished_scan.emit(f"Found {len(orphans)} orphan folders ({format_size(total_sz)})")
+        self.finished_scan.emit(T("rec_orphans", n=len(orphans), sz=format_size(total_sz)))
 
     # ──────────── INSTALLED PROGRAMS ────────────
     def _scan_installed(self):
@@ -402,7 +617,7 @@ class ScanWorker(QThread):
             vstr = f" v{ver}" if ver else ""
             self._emit(dn, sz, f"{pub}{vstr}", "installed", us)
         self.progress.emit(100, f"Programs: {len(computed)}")
-        self.finished_scan.emit(f"Found {len(computed)} installed programs (sorted by size)")
+        self.finished_scan.emit(T("rec_installed", n=len(computed)))
 
     # ──────────── RECYCLE BIN ────────────
     def _scan_recyclebin(self):
@@ -420,7 +635,7 @@ class ScanWorker(QThread):
         if sz > 0:
             self._emit("Recycle Bin", sz, "All drives", "recyclebin")
         self.progress.emit(100, "Done")
-        self.finished_scan.emit(f"Recycle bin: {format_size(sz)}")
+        self.finished_scan.emit(T("rec_recycle", sz=format_size(sz)))
 
     # ──────────── HIBERNATION ────────────
     def _scan_hibernation(self):
@@ -430,11 +645,11 @@ class ScanWorker(QThread):
             try:
                 sz = os.path.getsize(hp)
                 self._emit(hp, sz, "Hibernation file", "hibernation")
-                self.finished_scan.emit(f"hiberfil.sys = {format_size(sz)}. Will run: powercfg /h off")
+                self.finished_scan.emit(T("rec_hiber_on", sz=format_size(sz)))
             except Exception:
-                self.finished_scan.emit("Cannot read hiberfil.sys")
+                self.finished_scan.emit(T("rec_hiber_err"))
         else:
-            self.finished_scan.emit("Hibernation is already disabled.")
+            self.finished_scan.emit(T("rec_hiber_off"))
         self.progress.emit(100, "Done")
 
     # ──────────── BROWSER CLEANUP ────────────
@@ -476,7 +691,7 @@ class ScanWorker(QThread):
             self.progress.emit(int((i / len(items)) * 100) if items else 100, f"{browser}")
             self._emit(p, sz, f"{browser} cache", "browser")
         self.progress.emit(100, "Done")
-        self.finished_scan.emit(f"Browser caches: {format_size(total_freed)}")
+        self.finished_scan.emit(T("rec_browser", sz=format_size(total_freed)))
 
     # ──────────── QUICK AUDIT ────────────
     def _scan_audit(self):
@@ -562,13 +777,13 @@ class ScanWorker(QThread):
                     self._emit(p, sz, f"BROWSER: {browser}", "browser")
 
         self.progress.emit(100, "Audit complete")
-        self.finished_scan.emit("Quick audit complete. Select all (Ctrl+A) → Delete Selected.")
+        self.finished_scan.emit(T("rec_audit"))
 
     # ──────────── CUSTOM SCAN ────────────
     def _scan_custom(self):
         path = self.extra
         if not path or not os.path.isdir(path):
-            self.finished_scan.emit("Path does not exist")
+            self.finished_scan.emit(T("rec_path_err"))
             return
         items = []
         try:
@@ -590,7 +805,7 @@ class ScanWorker(QThread):
             self.progress.emit(min(100, items.index((fp, sz, det, tp)) * 100 // max(1, len(items))), os.path.basename(fp))
         self.progress.emit(100, "Done")
         total_sz = sum(s for _, s, _, _ in items[:100])
-        self.finished_scan.emit(f"Custom scan: {len(items[:100])} items, {format_size(total_sz)}")
+        self.finished_scan.emit(T("rec_custom", n=len(items[:100]), sz=format_size(total_sz)))
 
     # ── registry helper ──
     def _reg_val(self, key, name):
@@ -603,44 +818,46 @@ class ScanWorker(QThread):
 # ═══════════════════════════════════════════════════
 #  OPTIMIZATION DEFINITIONS
 # ═══════════════════════════════════════════════════
-OPT_PRESETS = {
-    "light": {
-        "title": "LIGHT",
-        "desc": "Safe tweaks. Speed boost without breaking anything.",
-        "color": C.GREEN,
-        "actions": [
-            ("Clear Temp + Prefetch", "powershell -NoProfile -Command \"Get-ChildItem $env:TEMP -Force -EA SilentlyContinue | Remove-Item -Recurse -Force -EA SilentlyContinue; Get-ChildItem 'C:\\Windows\\Temp' -Force -EA SilentlyContinue | Remove-Item -Recurse -Force -EA SilentlyContinue; Get-ChildItem 'C:\\Windows\\Prefetch' -Force -EA SilentlyContinue | Remove-Item -Force -EA SilentlyContinue\""),
-            ("Fast menu animation (delay=0)", 'reg add "HKCU\\Control Panel\\Desktop" /v MenuShowDelay /t REG_SZ /d "0" /f'),
-            ("Flush DNS cache", "ipconfig /flushdns"),
-            ("Enable fast startup", 'reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power" /v HiberbootEnabled /t REG_DWORD /d 1 /f'),
-        ],
-    },
-    "medium": {
-        "title": "MEDIUM",
-        "desc": "Disables telemetry, ads, Cortana. Noticeable speedup.",
-        "color": C.ORANGE,
-        "actions": [
-            ("Disable Windows telemetry", 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f && sc stop DiagTrack >nul 2>&1 && sc config DiagTrack start=disabled >nul 2>&1'),
-            ("Disable Cortana", 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search" /v AllowCortana /t REG_DWORD /d 0 /f'),
-            ("Disable advertising ID", 'reg add "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo" /v Enabled /t REG_DWORD /d 0 /f'),
-            ("Disable Tips & Suggestions", 'reg add "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager" /v SubscribedContent-338388Enabled /t REG_DWORD /d 0 /f'),
-            ("Clear Windows Event logs", "powershell -NoProfile -Command \"wevtutil el 2>$null | ForEach-Object { wevtutil cl $_ 2>$null }\""),
-        ],
-    },
-    "heavy": {
-        "title": "HEAVY",
-        "desc": "Maximum performance. Disables services, effects. For power users!",
-        "color": C.RED,
-        "actions": [
-            ("Visual effects → Performance", 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f'),
-            ("Disable SysMain (Superfetch)", "sc stop SysMain >nul 2>&1 && sc config SysMain start=disabled >nul 2>&1"),
-            ("Disable Windows Search indexing", "sc stop WSearch >nul 2>&1 && sc config WSearch start=disabled >nul 2>&1"),
-            ("Disable Hibernation (~6 GB)", "powercfg /h off"),
-            ("Power plan → High Performance", "powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"),
-            ("Disable DiagTrack service", "sc stop DiagTrack >nul 2>&1 && sc config DiagTrack start=disabled >nul 2>&1"),
-        ],
-    },
-}
+def get_opt_presets():
+    """Return optimization presets with translated strings."""
+    return {
+        "light": {
+            "title": T("opt_light"),
+            "desc": T("opt_light_d"),
+            "color": C.GREEN,
+            "actions": [
+                (T("oa_temp"), "powershell -NoProfile -Command \"Get-ChildItem $env:TEMP -Force -EA SilentlyContinue | Remove-Item -Recurse -Force -EA SilentlyContinue; Get-ChildItem 'C:\\Windows\\Temp' -Force -EA SilentlyContinue | Remove-Item -Recurse -Force -EA SilentlyContinue; Get-ChildItem 'C:\\Windows\\Prefetch' -Force -EA SilentlyContinue | Remove-Item -Force -EA SilentlyContinue\""),
+                (T("oa_menu"), 'reg add "HKCU\\Control Panel\\Desktop" /v MenuShowDelay /t REG_SZ /d "0" /f'),
+                (T("oa_dns"), "ipconfig /flushdns"),
+                (T("oa_fastboot"), 'reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power" /v HiberbootEnabled /t REG_DWORD /d 1 /f'),
+            ],
+        },
+        "medium": {
+            "title": T("opt_medium"),
+            "desc": T("opt_medium_d"),
+            "color": C.ORANGE,
+            "actions": [
+                (T("oa_telemetry"), 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f && sc stop DiagTrack >nul 2>&1 && sc config DiagTrack start=disabled >nul 2>&1'),
+                (T("oa_cortana"), 'reg add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search" /v AllowCortana /t REG_DWORD /d 0 /f'),
+                (T("oa_ads"), 'reg add "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo" /v Enabled /t REG_DWORD /d 0 /f'),
+                (T("oa_tips"), 'reg add "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager" /v SubscribedContent-338388Enabled /t REG_DWORD /d 0 /f'),
+                (T("oa_eventlogs"), "powershell -NoProfile -Command \"wevtutil el 2>$null | ForEach-Object { wevtutil cl $_ 2>$null }\""),
+            ],
+        },
+        "heavy": {
+            "title": T("opt_heavy"),
+            "desc": T("opt_heavy_d"),
+            "color": C.RED,
+            "actions": [
+                (T("oa_visual"), 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f'),
+                (T("oa_sysmain"), "sc stop SysMain >nul 2>&1 && sc config SysMain start=disabled >nul 2>&1"),
+                (T("oa_wsearch"), "sc stop WSearch >nul 2>&1 && sc config WSearch start=disabled >nul 2>&1"),
+                (T("oa_hibernate"), "powercfg /h off"),
+                (T("oa_power"), "powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"),
+                (T("oa_diagtrack"), "sc stop DiagTrack >nul 2>&1 && sc config DiagTrack start=disabled >nul 2>&1"),
+            ],
+        },
+    }
 
 
 # ═══════════════════════════════════════════════════
@@ -935,7 +1152,7 @@ class MainWindow(QMainWindow):
         title = QLabel("s0meClean?")
         title.setFont(QFont("Consolas", 20, QFont.Bold))
         title.setStyleSheet(f"color: {C.CYAN}; background: transparent;")
-        subtitle = QLabel("// CYBER DISK UTILITIES")
+        subtitle = QLabel(T("subtitle"))
         subtitle.setFont(QFont("Consolas", 9))
         subtitle.setStyleSheet(f"color: {C.PINK}; background: transparent;")
         logo_layout.addWidget(title)
@@ -946,7 +1163,7 @@ class MainWindow(QMainWindow):
 
         # Drive selector
         drive_layout = QVBoxLayout()
-        dl = QLabel("DRIVE")
+        dl = QLabel(T("drive"))
         dl.setFont(QFont("Consolas", 8, QFont.Bold))
         dl.setStyleSheet(f"color: {C.MUTED}; background: transparent;")
         self._drive_combo = QComboBox()
@@ -975,9 +1192,9 @@ class MainWindow(QMainWindow):
         hl.addSpacing(30)
 
         # Stats
-        self._stat_total = StatCard("TOTAL", "—", C.TEXT)
-        self._stat_used = StatCard("USED", "—", C.TEXT)
-        self._stat_free = StatCard("FREE", "—", C.GREEN)
+        self._stat_total = StatCard(T("total"), "—", C.TEXT)
+        self._stat_used = StatCard(T("used"), "—", C.TEXT)
+        self._stat_free = StatCard(T("free"), "—", C.GREEN)
         hl.addWidget(self._stat_total)
         hl.addWidget(self._stat_used)
         hl.addWidget(self._stat_free)
@@ -985,7 +1202,7 @@ class MainWindow(QMainWindow):
         hl.addStretch()
 
         # Admin badge
-        admin_badge = QLabel("● ADMIN" if is_admin() else "● NO ADMIN")
+        admin_badge = QLabel(T("admin_yes") if is_admin() else T("admin_no"))
         admin_badge.setFont(QFont("Consolas", 10, QFont.Bold))
         admin_badge.setStyleSheet(f"color: {C.GREEN if is_admin() else C.RED}; background: transparent;")
         hl.addWidget(admin_badge)
@@ -1012,11 +1229,11 @@ class MainWindow(QMainWindow):
 
         self._sidebar_btns = {}
         tabs = [
-            ("clean", "CLEANING", "🧹", C.CYAN),
-            ("opt", "OPTIMIZE", "⚡", C.ORANGE),
-            ("browser", "BROWSERS", "🌐", C.PURPLE),
-            ("custom", "CUSTOM SCAN", "📁", C.PINK),
-            ("settings", "SETTINGS", "⚙", C.DIM),
+            ("clean", T("tab_clean"), "🧹", C.CYAN),
+            ("opt", T("tab_opt"), "⚡", C.ORANGE),
+            ("browser", T("tab_browser"), "🌐", C.PURPLE),
+            ("custom", T("tab_custom"), "📁", C.PINK),
+            ("settings", T("tab_settings"), "⚙", C.DIM),
         ]
         for key, text, icon, color in tabs:
             btn = SidebarButton(text, icon, color)
@@ -1032,7 +1249,7 @@ class MainWindow(QMainWindow):
         sl.addSpacing(8)
 
         # Scan actions label
-        self._actions_label = QLabel("// SCAN ACTIONS")
+        self._actions_label = QLabel(T("scan_actions"))
         self._actions_label.setFont(QFont("Consolas", 8, QFont.Bold))
         self._actions_label.setStyleSheet(f"color: {C.PINK}; background: transparent;")
         sl.addWidget(self._actions_label)
@@ -1046,7 +1263,7 @@ class MainWindow(QMainWindow):
         sl.addStretch()
 
         # GitHub button
-        gh_btn = QPushButton("★  GITHUB")
+        gh_btn = QPushButton(T("github_btn"))
         gh_btn.setCursor(Qt.PointingHandCursor)
         gh_btn.setFont(QFont("Consolas", 9, QFont.Bold))
         gh_btn.setStyleSheet(f"""
@@ -1060,7 +1277,7 @@ class MainWindow(QMainWindow):
         sl.addWidget(gh_btn)
 
         # Update button
-        upd_btn = QPushButton("↻  CHECK UPDATES")
+        upd_btn = QPushButton(T("check_updates"))
         upd_btn.setCursor(Qt.PointingHandCursor)
         upd_btn.setFont(QFont("Consolas", 9, QFont.Bold))
         upd_btn.setStyleSheet(f"""
@@ -1104,7 +1321,7 @@ class MainWindow(QMainWindow):
 
         # Top bar
         top = QHBoxLayout()
-        t = QLabel("// RESULTS")
+        t = QLabel(T("results"))
         t.setFont(QFont("Consolas", 12, QFont.Bold))
         t.setStyleSheet(f"color: {C.CYAN};")
         top.addWidget(t)
@@ -1132,10 +1349,10 @@ class MainWindow(QMainWindow):
         stripe.setStyleSheet(f"background: {C.PINK}; border: none; border-radius: 1px;")
         rec_layout.addWidget(stripe)
         rec_inner = QVBoxLayout()
-        rl = QLabel("ANALYSIS // RECOMMENDATIONS")
+        rl = QLabel(T("analysis"))
         rl.setFont(QFont("Consolas", 8, QFont.Bold))
         rl.setStyleSheet(f"color: {C.PINK}; border: none;")
-        self._rec_text = QLabel("Select a scan action from the sidebar to begin.")
+        self._rec_text = QLabel(T("start_hint"))
         self._rec_text.setFont(QFont("Segoe UI", 10))
         self._rec_text.setStyleSheet(f"color: {C.TEXT}; border: none;")
         self._rec_text.setWordWrap(True)
@@ -1146,7 +1363,7 @@ class MainWindow(QMainWindow):
 
         # Tree (results list)
         self._tree = QTreeWidget()
-        self._tree.setHeaderLabels(["#", "SIZE", "PATH", "TYPE"])
+        self._tree.setHeaderLabels(["#", T("col_size"), T("col_path"), T("col_type")])
         self._tree.setColumnWidth(0, 50)
         self._tree.setColumnWidth(1, 120)
         self._tree.setColumnWidth(2, 650)
@@ -1180,7 +1397,7 @@ class MainWindow(QMainWindow):
         log_frame.setStyleSheet(f"QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; }}")
         log_layout = QVBoxLayout(log_frame)
         log_layout.setContentsMargins(10, 6, 10, 6)
-        ll = QLabel("ACTIVITY")
+        ll = QLabel(T("activity"))
         ll.setFont(QFont("Consolas", 8, QFont.Bold))
         ll.setStyleSheet(f"color: {C.PINK}; border: none;")
         self._log_text = QTextEdit()
@@ -1198,12 +1415,12 @@ class MainWindow(QMainWindow):
         act_layout = QVBoxLayout(act_frame)
         act_layout.setContentsMargins(12, 8, 12, 8)
 
-        self._sel_label = QLabel("Nothing selected")
+        self._sel_label = QLabel(T("nothing_sel"))
         self._sel_label.setFont(QFont("Consolas", 9))
         self._sel_label.setStyleSheet(f"color: {C.MUTED}; border: none;")
         act_layout.addWidget(self._sel_label)
 
-        self._btn_delete = QPushButton("🗑  DELETE SELECTED")
+        self._btn_delete = QPushButton(T("delete_sel"))
         self._btn_delete.setFont(QFont("Consolas", 10, QFont.Bold))
         self._btn_delete.setCursor(Qt.PointingHandCursor)
         self._btn_delete.setStyleSheet(f"""
@@ -1218,7 +1435,7 @@ class MainWindow(QMainWindow):
         self._btn_delete.clicked.connect(self._delete_selected)
         act_layout.addWidget(self._btn_delete)
 
-        btn_open = QPushButton("📂  OPEN IN EXPLORER")
+        btn_open = QPushButton(T("open_explorer"))
         btn_open.setFont(QFont("Segoe UI", 9, QFont.Bold))
         btn_open.setCursor(Qt.PointingHandCursor)
         btn_open.setStyleSheet(f"""
@@ -1231,7 +1448,7 @@ class MainWindow(QMainWindow):
         btn_open.clicked.connect(self._open_in_explorer)
         act_layout.addWidget(btn_open)
 
-        btn_sel_all = QPushButton("SELECT ALL (Ctrl+A)")
+        btn_sel_all = QPushButton(T("select_all"))
         btn_sel_all.setFont(QFont("Segoe UI", 9))
         btn_sel_all.setCursor(Qt.PointingHandCursor)
         btn_sel_all.setStyleSheet(f"""
@@ -1258,12 +1475,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(20, 16, 20, 16)
 
-        t = QLabel("// WINDOWS OPTIMIZATION")
+        t = QLabel(T("opt_title"))
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.CYAN};")
         layout.addWidget(t)
 
-        desc = QLabel("Choose a level. Check the actions you want, then click APPLY.")
+        desc = QLabel(T("opt_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
@@ -1276,7 +1493,7 @@ class MainWindow(QMainWindow):
         scroll_l = QVBoxLayout(scroll_w)
         scroll_l.setSpacing(16)
 
-        for key, preset in OPT_PRESETS.items():
+        for key, preset in get_opt_presets().items():
             card = QFrame()
             card.setStyleSheet(f"""
                 QFrame {{
@@ -1294,7 +1511,7 @@ class MainWindow(QMainWindow):
             tt.setStyleSheet(f"color: {preset['color']}; border: none;")
             tr.addWidget(tt)
             tr.addStretch()
-            apply_btn = QPushButton(f"APPLY  ▶")
+            apply_btn = QPushButton(T("apply"))
             apply_btn.setFont(QFont("Consolas", 10, QFont.Bold))
             apply_btn.setCursor(Qt.PointingHandCursor)
             apply_btn.setStyleSheet(f"""
@@ -1331,17 +1548,17 @@ class MainWindow(QMainWindow):
         qa_frame.setStyleSheet(f"QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; }}")
         qa_l = QVBoxLayout(qa_frame)
         qa_l.setContentsMargins(16, 12, 16, 12)
-        qa_t = QLabel("QUICK ACTIONS")
+        qa_t = QLabel(T("quick_actions"))
         qa_t.setFont(QFont("Consolas", 11, QFont.Bold))
         qa_t.setStyleSheet(f"color: {C.YELLOW}; border: none;")
         qa_l.addWidget(qa_t)
 
         quick_actions = [
-            ("chkdsk C: /scan", "chkdsk C:"),
-            ("Disk Cleanup (cleanmgr)", "cleanmgr /lowdisk"),
-            ("Defragment (dfrgui)", "dfrgui"),
-            ("Task Manager → Startup", "taskmgr /0 /startup"),
-            ("Services (services.msc)", "services.msc"),
+            (T("qa_chkdsk"), "chkdsk C:"),
+            (T("qa_cleanmgr"), "cleanmgr /lowdisk"),
+            (T("qa_defrag"), "dfrgui"),
+            (T("qa_startup"), "taskmgr /0 /startup"),
+            (T("qa_services"), "services.msc"),
         ]
         for label, cmd in quick_actions:
             btn = QPushButton(f"  {label}")
@@ -1370,18 +1587,18 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(20, 16, 20, 16)
 
-        t = QLabel("// BROWSER CACHE CLEANUP")
+        t = QLabel(T("browser_title"))
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.PURPLE};")
         layout.addWidget(t)
 
-        desc = QLabel("Scan and clean browser caches. Close browsers before cleaning for best results.")
+        desc = QLabel(T("browser_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
         layout.addSpacing(16)
 
-        scan_btn = QPushButton("🔍  SCAN BROWSER CACHES")
+        scan_btn = QPushButton(T("scan_browsers"))
         scan_btn.setFont(QFont("Consolas", 11, QFont.Bold))
         scan_btn.setCursor(Qt.PointingHandCursor)
         scan_btn.setFixedHeight(48)
@@ -1395,7 +1612,7 @@ class MainWindow(QMainWindow):
         scan_btn.clicked.connect(lambda: self._start_scan("browser"))
         layout.addWidget(scan_btn)
 
-        info = QLabel("Results will appear in the CLEANING tab after scan completes.")
+        info = QLabel(T("browser_hint"))
         info.setFont(QFont("Segoe UI", 9))
         info.setStyleSheet(f"color: {C.MUTED};")
         layout.addWidget(info)
@@ -1409,12 +1626,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(20, 16, 20, 16)
 
-        t = QLabel("// CUSTOM SCAN")
+        t = QLabel(T("custom_title"))
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.PINK};")
         layout.addWidget(t)
 
-        desc = QLabel("Pick a folder — shows largest subfolders and files inside.")
+        desc = QLabel(T("custom_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
@@ -1422,7 +1639,7 @@ class MainWindow(QMainWindow):
 
         # Path row
         row = QHBoxLayout()
-        pl = QLabel("Path:")
+        pl = QLabel(T("path_label"))
         pl.setFont(QFont("Consolas", 10, QFont.Bold))
         pl.setStyleSheet(f"color: {C.PINK};")
         row.addWidget(pl)
@@ -1436,7 +1653,7 @@ class MainWindow(QMainWindow):
         """)
         row.addWidget(self._custom_path, 1)
 
-        pick_btn = QPushButton("PICK FOLDER")
+        pick_btn = QPushButton(T("pick_folder"))
         pick_btn.setFont(QFont("Consolas", 9, QFont.Bold))
         pick_btn.setCursor(Qt.PointingHandCursor)
         pick_btn.setStyleSheet(f"""
@@ -1449,7 +1666,7 @@ class MainWindow(QMainWindow):
         pick_btn.clicked.connect(self._pick_custom_folder)
         row.addWidget(pick_btn)
 
-        scan_btn = QPushButton("SCAN  ▶")
+        scan_btn = QPushButton(T("scan_go"))
         scan_btn.setFont(QFont("Consolas", 9, QFont.Bold))
         scan_btn.setCursor(Qt.PointingHandCursor)
         scan_btn.setStyleSheet(f"""
@@ -1465,7 +1682,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(row)
         layout.addSpacing(12)
 
-        hint = QLabel("Results will appear in the CLEANING tab after scan.")
+        hint = QLabel(T("custom_hint"))
         hint.setFont(QFont("Segoe UI", 10, italic=True))
         hint.setStyleSheet(f"color: {C.MUTED};")
         layout.addWidget(hint)
@@ -1479,11 +1696,53 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(20, 16, 20, 16)
 
-        t = QLabel("// SETTINGS")
+        t = QLabel(T("settings_title"))
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.CYAN};")
         layout.addWidget(t)
         layout.addSpacing(16)
+
+        # Language card
+        lang_card = QFrame()
+        lang_card.setStyleSheet(f"""
+            QFrame {{
+                background: {C.PANEL}; border: 1px solid {C.BORDER};
+                border-radius: 12px; border-left: 4px solid {C.PURPLE};
+            }}
+        """)
+        lang_l = QVBoxLayout(lang_card)
+        lang_l.setContentsMargins(16, 12, 16, 12)
+        lang_t = QLabel(T("language"))
+        lang_t.setFont(QFont("Consolas", 11, QFont.Bold))
+        lang_t.setStyleSheet(f"color: {C.PURPLE}; border: none;")
+        lang_l.addWidget(lang_t)
+        lang_row = QHBoxLayout()
+        self._lang_combo = QComboBox()
+        self._lang_combo.addItem("English", "EN")
+        self._lang_combo.addItem("Русский", "RU")
+        idx_lang = self._lang_combo.findData(LANG)
+        if idx_lang >= 0:
+            self._lang_combo.setCurrentIndex(idx_lang)
+        self._lang_combo.setFont(QFont("Consolas", 11))
+        self._lang_combo.setStyleSheet(f"""
+            QComboBox {{
+                background: {C.PANEL2}; color: {C.CYAN}; border: 1px solid {C.BORDER};
+                border-radius: 6px; padding: 6px 12px; min-width: 160px;
+            }}
+            QComboBox::drop-down {{ border: none; }}
+            QComboBox QAbstractItemView {{ background: {C.PANEL2}; color: {C.TEXT}; selection-background-color: {C.CYAN_D}; }}
+        """)
+        self._lang_combo.currentIndexChanged.connect(self._on_lang_changed)
+        lang_row.addWidget(self._lang_combo)
+        self._lang_hint = QLabel(T("lang_restart"))
+        self._lang_hint.setFont(QFont("Segoe UI", 9))
+        self._lang_hint.setStyleSheet(f"color: {C.MUTED}; border: none;")
+        self._lang_hint.setVisible(False)
+        lang_row.addWidget(self._lang_hint)
+        lang_row.addStretch()
+        lang_l.addLayout(lang_row)
+        layout.addWidget(lang_card)
+        layout.addSpacing(12)
 
         # About card
         about = QFrame()
@@ -1495,16 +1754,11 @@ class MainWindow(QMainWindow):
         """)
         al = QVBoxLayout(about)
         al.setContentsMargins(16, 12, 16, 12)
-        at = QLabel("ABOUT")
+        at = QLabel(T("about"))
         at.setFont(QFont("Consolas", 11, QFont.Bold))
         at.setStyleSheet(f"color: {C.GREEN}; border: none;")
         al.addWidget(at)
-        ad = QLabel(
-            f"s0meClean? v{VERSION} — Cyberpunk Disk Cleaner & Windows Optimizer.\n"
-            "Scan junk, phantom programs, orphan folders, browser caches.\n"
-            "Optimize Windows with 3 preset levels. Open source, MIT License.\n"
-            "by solevoyq"
-        )
+        ad = QLabel(f"s0meClean? v{VERSION}\n{T('about_text')}")
         ad.setFont(QFont("Segoe UI", 10))
         ad.setStyleSheet(f"color: {C.DIM}; border: none;")
         ad.setWordWrap(True)
@@ -1522,7 +1776,7 @@ class MainWindow(QMainWindow):
         """)
         kl = QVBoxLayout(key_card)
         kl.setContentsMargins(16, 12, 16, 12)
-        kt = QLabel("ACCESS KEY")
+        kt = QLabel(T("access_key"))
         kt.setFont(QFont("Consolas", 11, QFont.Bold))
         kt.setStyleSheet(f"color: {C.CYAN}; border: none;")
         kl.addWidget(kt)
@@ -1538,7 +1792,7 @@ class MainWindow(QMainWindow):
             }}
         """)
         key_row.addWidget(self._key_input, 1)
-        activate_btn = QPushButton("ACTIVATE")
+        activate_btn = QPushButton(T("activate"))
         activate_btn.setFont(QFont("Consolas", 10, QFont.Bold))
         activate_btn.setCursor(Qt.PointingHandCursor)
         activate_btn.setStyleSheet(f"""
@@ -1552,7 +1806,7 @@ class MainWindow(QMainWindow):
         key_row.addWidget(activate_btn)
         kl.addLayout(key_row)
 
-        self._key_status = QLabel("STATUS: Not activated")
+        self._key_status = QLabel(T("key_none"))
         self._key_status.setFont(QFont("Consolas", 9))
         self._key_status.setStyleSheet(f"color: {C.MUTED}; border: none;")
         kl.addWidget(self._key_status)
@@ -1571,11 +1825,11 @@ class MainWindow(QMainWindow):
         sb.setStyleSheet(f"background: {C.PANEL2}; border-top: 1px solid {C.CYAN};")
         sbl = QHBoxLayout(sb)
         sbl.setContentsMargins(12, 0, 12, 0)
-        st = QLabel("STATUS")
+        st = QLabel(T("status"))
         st.setFont(QFont("Consolas", 8, QFont.Bold))
         st.setStyleSheet(f"color: {C.PINK};")
         sbl.addWidget(st)
-        self._status_label = QLabel("Ready")
+        self._status_label = QLabel(T("ready"))
         self._status_label.setFont(QFont("Consolas", 10))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
         sbl.addWidget(self._status_label)
@@ -1601,19 +1855,19 @@ class MainWindow(QMainWindow):
 
         if tab == "clean":
             actions = [
-                ("⚡ QUICK AUDIT", C.GREEN, True, lambda: self._start_scan("audit")),
-                ("📁 Largest folders", C.CYAN, False, lambda: self._start_scan("largefolders")),
-                ("👻 Phantom programs", C.RED, False, lambda: self._start_scan("phantoms")),
-                ("🔗 Orphan folders", C.CYAN, False, lambda: self._start_scan("orphans")),
-                ("📦 Large files (>500MB)", C.CYAN, False, lambda: self._start_scan("largefiles")),
-                ("💾 Installed programs", C.PINK, False, lambda: self._start_scan("installed")),
-                ("🗑 Junk (Temp, caches)", C.ORANGE, False, lambda: self._start_scan("junk")),
-                ("♻ Recycle bin", C.PINK, False, lambda: self._start_scan("recyclebin")),
-                ("💤 Hiberfil.sys", C.YELLOW, False, lambda: self._start_scan("hibernation")),
+                (T("quick_audit"), C.GREEN, True, lambda: self._start_scan("audit")),
+                (T("largest_folders"), C.CYAN, False, lambda: self._start_scan("largefolders")),
+                (T("phantom_progs"), C.RED, False, lambda: self._start_scan("phantoms")),
+                (T("orphan_folders"), C.CYAN, False, lambda: self._start_scan("orphans")),
+                (T("large_files"), C.CYAN, False, lambda: self._start_scan("largefiles")),
+                (T("installed_progs"), C.PINK, False, lambda: self._start_scan("installed")),
+                (T("junk_temp"), C.ORANGE, False, lambda: self._start_scan("junk")),
+                (T("recycle_bin"), C.PINK, False, lambda: self._start_scan("recyclebin")),
+                (T("hiberfil"), C.YELLOW, False, lambda: self._start_scan("hibernation")),
             ]
         elif tab == "opt":
             actions = [
-                ("▶ Open Optimization tab", C.ORANGE, True, lambda: None),
+                (T("open_opt_tab"), C.ORANGE, True, lambda: None),
             ]
         else:
             actions = []
@@ -1650,9 +1904,9 @@ class MainWindow(QMainWindow):
         self._tree.clear()
         self._log_text.clear()
         self._progress.setValue(0)
-        self._rec_text.setText("Scanning...")
+        self._rec_text.setText(T("scanning"))
         self._btn_delete.setEnabled(False)
-        self._sel_label.setText("Scanning...")
+        self._sel_label.setText(T("scanning"))
 
         drive = self._drive_combo.currentText()
         self._worker = ScanWorker(scan_type, drive, extra)
@@ -1662,7 +1916,7 @@ class MainWindow(QMainWindow):
         self._worker.finished_scan.connect(self._on_scan_done)
         self._worker.start()
 
-        self._status_label.setText(f"Scanning: {scan_type}...")
+        self._status_label.setText(T("scanning_t", t=scan_type))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
 
         # Switch to clean page to show results
@@ -1700,22 +1954,22 @@ class MainWindow(QMainWindow):
     def _on_scan_done(self, recommendation):
         self._progress.setValue(100)
         self._rec_text.setText(recommendation)
-        self._status_label.setText("Done")
+        self._status_label.setText(T("done"))
         self._status_label.setStyleSheet(f"color: {C.GREEN};")
-        self._result_info.setText(f"{len(self._scan_items)} items found")
+        self._result_info.setText(T("items_found", n=len(self._scan_items)))
         total_sz = sum(i.size for i in self._scan_items)
         if total_sz > 0:
-            self._result_info.setText(f"{len(self._scan_items)} items  ·  {format_size(total_sz)}")
+            self._result_info.setText(T("items_size", n=len(self._scan_items), sz=format_size(total_sz)))
 
     def _on_selection_changed(self):
         sel = self._tree.selectedItems()
         n = len(sel)
         if n == 0:
-            self._sel_label.setText("Nothing selected")
+            self._sel_label.setText(T("nothing_sel"))
             self._btn_delete.setEnabled(False)
         else:
             total = sum(self._scan_items[int(it.text(0)) - 1].size for it in sel if int(it.text(0)) - 1 < len(self._scan_items))
-            self._sel_label.setText(f"Selected: {n} items · {format_size(total)}")
+            self._sel_label.setText(T("sel_items", n=n, sz=format_size(total)))
             self._btn_delete.setEnabled(True)
 
     def _select_all(self):
@@ -1738,9 +1992,8 @@ class MainWindow(QMainWindow):
         if not sel:
             return
         n = len(sel)
-        r = QMessageBox.question(self, "Confirm Deletion",
-                                 f"Delete {n} items? This cannot be undone for files.\n"
-                                 "Phantom entries will only be removed from registry.",
+        r = QMessageBox.question(self, T("confirm_del_t"),
+                                 T("confirm_del_m", n=n),
                                  QMessageBox.Yes | QMessageBox.No)
         if r != QMessageBox.Yes:
             return
@@ -1801,8 +2054,8 @@ class MainWindow(QMainWindow):
                 self._on_log(f"DELETE FAIL: {item.path} — {e}")
                 fail += 1
 
-        QMessageBox.information(self, "Result",
-                                f"Success: {ok}\nErrors: {fail}\nFreed: {format_size(freed)}")
+        QMessageBox.information(self, T("result_title"),
+                                T("result_msg", ok=ok, fail=fail, freed=format_size(freed)))
         self._update_disk_info()
 
     # ── OPTIMIZATION ──
@@ -1810,8 +2063,8 @@ class MainWindow(QMainWindow):
         checked = [cb for cb in checks if cb.isChecked()]
         if not checked:
             return
-        r = QMessageBox.question(self, "Confirm",
-                                 f"Apply {len(checked)} actions from '{title}'?",
+        r = QMessageBox.question(self, T("confirm_title"),
+                                 T("confirm_opt", n=len(checked), title=title),
                                  QMessageBox.Yes | QMessageBox.No)
         if r != QMessageBox.Yes:
             return
@@ -1825,12 +2078,12 @@ class MainWindow(QMainWindow):
             except Exception:
                 cb.setStyleSheet(f"color: {C.RED}; border: none; spacing: 8px;")
                 fail += 1
-        QMessageBox.information(self, "Done",
-                                f"Applied: {ok}\nErrors: {fail}\n\nSome changes require a reboot.")
+        QMessageBox.information(self, T("opt_done_t"),
+                                T("opt_done_m", ok=ok, fail=fail))
 
     # ── CUSTOM SCAN ──
     def _pick_custom_folder(self):
-        d = QFileDialog.getExistingDirectory(self, "Select Folder")
+        d = QFileDialog.getExistingDirectory(self, T("select_folder"))
         if d:
             self._custom_path.setText(d)
 
@@ -1863,11 +2116,11 @@ class MainWindow(QMainWindow):
         # Simple validation — try GitHub gist or local check
         # For now accept any properly formatted key
         if len(key.replace("-", "")) >= 20:
-            self._key_status.setText(f"STATUS: ACTIVE  ·  Key: {key[:10]}...")
+            self._key_status.setText(f"{T('key_active')} {key[:10]}...")
             self._key_status.setStyleSheet(f"color: {C.GREEN}; border: none;")
             self._save_key(key)
         else:
-            self._key_status.setText("STATUS: Invalid key format")
+            self._key_status.setText(T("key_invalid"))
             self._key_status.setStyleSheet(f"color: {C.RED}; border: none;")
 
     def _save_key(self, key):
@@ -1892,14 +2145,14 @@ class MainWindow(QMainWindow):
                 key = data.get("key", "")
                 if key:
                     self._key_input.setText(key)
-                    self._key_status.setText(f"STATUS: ACTIVE  ·  Key: {key[:10]}...")
+                    self._key_status.setText(f"{T('key_active')} {key[:10]}...")
                     self._key_status.setStyleSheet(f"color: {C.GREEN}; border: none;")
         except Exception:
             pass
 
     # ── AUTO-UPDATER ──
     def _check_update(self):
-        self._status_label.setText("Checking for updates...")
+        self._status_label.setText(T("checking_upd"))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
 
         def _check():
@@ -1916,13 +2169,13 @@ class MainWindow(QMainWindow):
 
         def _done(ver):
             if ver:
-                r = QMessageBox.question(self, "Update Available",
-                                         f"New version: v{ver}\nCurrent: v{VERSION}\n\nDownload and update?",
+                r = QMessageBox.question(self, T("upd_available_t"),
+                                         T("upd_available_m", ver=ver, cur=VERSION),
                                          QMessageBox.Yes | QMessageBox.No)
                 if r == QMessageBox.Yes:
                     self._apply_update()
             else:
-                self._status_label.setText(f"Up to date (v{VERSION})")
+                self._status_label.setText(f"{T('up_to_date')} (v{VERSION})")
                 self._status_label.setStyleSheet(f"color: {C.GREEN};")
 
         def _thread():
@@ -1932,7 +2185,7 @@ class MainWindow(QMainWindow):
         threading.Thread(target=_thread, daemon=True).start()
 
     def _apply_update(self):
-        self._status_label.setText("Downloading update...")
+        self._status_label.setText(T("downloading"))
         self._status_label.setStyleSheet(f"color: {C.ORANGE};")
 
         def _download():
@@ -1973,11 +2226,11 @@ class MainWindow(QMainWindow):
 
         def _done(success):
             if success:
-                QMessageBox.information(self, "Updated", "Update installed. Restart the app.")
-                self._status_label.setText("Update installed — restart required")
+                QMessageBox.information(self, T("updated_t"), T("updated_m"))
+                self._status_label.setText(T("upd_installed"))
                 self._status_label.setStyleSheet(f"color: {C.GREEN};")
             else:
-                self._status_label.setText("Update failed")
+                self._status_label.setText(T("upd_failed"))
                 self._status_label.setStyleSheet(f"color: {C.RED};")
 
         def _thread():
@@ -1985,6 +2238,23 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(0, lambda: _done(ok))
 
         threading.Thread(target=_thread, daemon=True).start()
+
+    # ── LANGUAGE SWITCH ──
+    def _on_lang_changed(self, index):
+        new_lang = self._lang_combo.itemData(index)
+        if new_lang and new_lang != LANG:
+            cfg = os.path.join(app_dir(), "config.json")
+            try:
+                data = {}
+                if os.path.exists(cfg):
+                    with open(cfg, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                data["language"] = new_lang
+                with open(cfg, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass
+            self._lang_hint.setVisible(True)
 
     # ── Resize background ──
     def resizeEvent(self, event):
@@ -1999,6 +2269,8 @@ class MainWindow(QMainWindow):
 def main():
     if not is_admin():
         run_as_admin()
+
+    _load_language()
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
