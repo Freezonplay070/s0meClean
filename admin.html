@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>s0meClean? — Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --cyan: #00f0ff; --pink: #ff1e82; --purple: #a855f7; --bg: #0a0e1a; --panel: #121a2e; --panel2: #1a2340; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: #dce6fa; font-family: 'Share Tech Mono', monospace; min-height: 100vh; }
+    .neon-border { border: 1px solid rgba(0,240,255,0.2); }
+    .neon-border:hover { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,240,255,0.1); }
+    input, select { background: var(--panel2); color: #dce6fa; border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 8px 12px; font-family: 'Share Tech Mono'; font-size: 14px; outline: none; }
+    input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.15); }
+    .btn { background: var(--cyan); color: var(--bg); font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 2px; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .btn:hover { box-shadow: 0 0 20px rgba(0,240,255,0.4); transform: scale(1.02); }
+    .btn-pink { background: var(--pink); }
+    .btn-pink:hover { box-shadow: 0 0 20px rgba(255,30,130,0.4); }
+    .btn-purple { background: var(--purple); }
+    .btn-sm { padding: 6px 14px; font-size: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: var(--panel2); color: var(--cyan); font-family: 'Orbitron'; font-size: 11px; letter-spacing: 2px; padding: 12px 16px; text-align: left; }
+    td { padding: 10px 16px; border-bottom: 1px solid rgba(0,240,255,0.08); font-size: 13px; }
+    tr:hover td { background: rgba(0,240,255,0.03); }
+    .status-active { color: #32e682; }
+    .status-expired { color: #ff4664; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; letter-spacing: 1px; }
+    .badge-active { background: rgba(50,230,130,0.15); color: #32e682; border: 1px solid rgba(50,230,130,0.3); }
+    .badge-expired { background: rgba(255,70,100,0.15); color: #ff4664; border: 1px solid rgba(255,70,100,0.3); }
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--cyan); border-radius: 12px; padding: 24px; min-width: 400px; max-width: 500px; }
+  </style>
+</head>
+<body class="p-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8 pb-4 border-b border-cyan-900/30">
+    <div>
+      <h1 class="font-['Orbitron'] text-2xl font-black">
+        s0me<span class="text-cyan-400">Clean</span><span class="text-pink-500">?</span>
+        <span class="text-zinc-600 text-lg ml-3">ADMIN PANEL</span>
+      </h1>
+      <p class="text-zinc-600 text-xs mt-1 tracking-widest">KEY MANAGEMENT · USER CONTROL · ANALYTICS</p>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn" onclick="openModal('generate')">+ GENERATE KEY</button>
+      <button class="btn btn-purple" onclick="exportKeys()">↓ EXPORT</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="neon-border rounded-lg p-4 bg-[var(--panel)] transition-all">
+      <p class="text-zinc-500 text-xs tracking-widest mb-1">TOTAL KEYS</p>
+      <p class="font-['Orbitron'] text-3xl font-black text-cyan-400" id="stat-total">0</p>
+    </div>
+    <div class="neon-border rounded-lg p-4 bg-[var(--panel)] transition-all">
+      <p class="text-zinc-500 text-xs tracking-widest mb-1">ACTIVE</p>
+      <p class="font-['Orbitron'] text-3xl font-black text-green-400" id="stat-active">0</p>
+    </div>
+    <div class="neon-border rounded-lg p-4 bg-[var(--panel)] transition-all">
+      <p class="text-zinc-500 text-xs tracking-widest mb-1">EXPIRED</p>
+      <p class="font-['Orbitron'] text-3xl font-black text-red-400" id="stat-expired">0</p>
+    </div>
+    <div class="neon-border rounded-lg p-4 bg-[var(--panel)] transition-all">
+      <p class="text-zinc-500 text-xs tracking-widest mb-1">ACTIVATIONS TODAY</p>
+      <p class="font-['Orbitron'] text-3xl font-black text-purple-400" id="stat-today">0</p>
+    </div>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="flex gap-4 mb-4">
+    <input type="text" id="search" placeholder="Search keys..." class="flex-1" oninput="renderTable()"/>
+    <select id="filter" onchange="renderTable()">
+      <option value="all">All</option>
+      <option value="active">Active</option>
+      <option value="expired">Expired</option>
+    </select>
+  </div>
+
+  <!-- Keys Table -->
+  <div class="neon-border rounded-lg overflow-hidden bg-[var(--panel)]">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>KEY</th>
+          <th>STATUS</th>
+          <th>CREATED</th>
+          <th>EXPIRES</th>
+          <th>NOTE</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="keys-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Generate Modal -->
+  <div class="modal-overlay" id="modal-generate">
+    <div class="modal">
+      <h3 class="font-['Orbitron'] text-lg font-bold text-cyan-400 mb-4">GENERATE NEW KEY</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="text-zinc-500 text-xs tracking-widest">DURATION</label>
+          <select id="gen-duration" class="w-full mt-1">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+            <option value="180">180 days</option>
+            <option value="365">1 year</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div id="gen-custom-wrap" style="display:none">
+          <label class="text-zinc-500 text-xs tracking-widest">CUSTOM DAYS</label>
+          <input type="number" id="gen-custom-days" class="w-full mt-1" placeholder="Number of days" min="1" max="3650"/>
+        </div>
+        <div>
+          <label class="text-zinc-500 text-xs tracking-widest">NOTE (optional)</label>
+          <input type="text" id="gen-note" class="w-full mt-1" placeholder="e.g. friend, customer..."/>
+        </div>
+        <div>
+          <label class="text-zinc-500 text-xs tracking-widest">QUANTITY</label>
+          <input type="number" id="gen-qty" class="w-full mt-1" value="1" min="1" max="50"/>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button class="btn flex-1" onclick="generateKeys()">GENERATE</button>
+        <button class="btn btn-pink flex-1" onclick="closeModal('generate')">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extend Modal -->
+  <div class="modal-overlay" id="modal-extend">
+    <div class="modal">
+      <h3 class="font-['Orbitron'] text-lg font-bold text-cyan-400 mb-4">EXTEND KEY</h3>
+      <p class="text-zinc-400 text-sm mb-2">Key: <span id="extend-key-display" class="text-cyan-400"></span></p>
+      <p class="text-zinc-400 text-sm mb-4">Current expiry: <span id="extend-current" class="text-zinc-300"></span></p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-zinc-500 text-xs tracking-widest">EXTEND BY</label>
+          <select id="extend-duration" class="w-full mt-1">
+            <option value="7">+7 days</option>
+            <option value="30" selected>+30 days</option>
+            <option value="90">+90 days</option>
+            <option value="180">+180 days</option>
+            <option value="365">+1 year</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div id="extend-custom-wrap" style="display:none">
+          <label class="text-zinc-500 text-xs tracking-widest">CUSTOM DAYS</label>
+          <input type="number" id="extend-custom-days" class="w-full mt-1" placeholder="Number of days" min="1" max="3650"/>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button class="btn flex-1" onclick="extendKey()">EXTEND</button>
+        <button class="btn btn-pink flex-1" onclick="closeModal('extend')">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ── Data ──
+  let keys = JSON.parse(localStorage.getItem('s0meClean_keys') || '[]');
+  let extendIdx = -1;
+
+  // ── Key Generator ──
+  function genKey() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const parts = [];
+    for (let p = 0; p < 5; p++) {
+      let seg = '';
+      for (let i = 0; i < 5; i++) seg += chars[Math.floor(Math.random() * chars.length)];
+      parts.push(seg);
+    }
+    return 'S0MCL-' + parts.slice(1).join('-');
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+
+  function isExpired(exp) {
+    return new Date(exp) < new Date();
+  }
+
+  // ── Render ──
+  function renderTable() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const filter = document.getElementById('filter').value;
+    const tbody = document.getElementById('keys-body');
+    tbody.innerHTML = '';
+
+    let active = 0, expired = 0, today = 0;
+    const todayStr = new Date().toDateString();
+
+    const filtered = keys.filter((k, i) => {
+      const exp = isExpired(k.expires);
+      if (exp) expired++; else active++;
+      if (new Date(k.created).toDateString() === todayStr) today++;
+      if (filter === 'active' && exp) return false;
+      if (filter === 'expired' && !exp) return false;
+      if (search && !k.key.toLowerCase().includes(search) && !(k.note||'').toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    document.getElementById('stat-total').textContent = keys.length;
+    document.getElementById('stat-active').textContent = active;
+    document.getElementById('stat-expired').textContent = expired;
+    document.getElementById('stat-today').textContent = today;
+
+    filtered.forEach((k, fi) => {
+      const idx = keys.indexOf(k);
+      const exp = isExpired(k.expires);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-zinc-500">${idx + 1}</td>
+        <td class="font-['Share_Tech_Mono'] tracking-wider ${exp ? 'text-zinc-600' : 'text-zinc-200'}">${k.key}</td>
+        <td><span class="badge ${exp ? 'badge-expired' : 'badge-active'}">${exp ? 'EXPIRED' : 'ACTIVE'}</span></td>
+        <td class="text-zinc-500">${fmtDate(new Date(k.created))}</td>
+        <td class="${exp ? 'text-red-400' : 'text-zinc-400'}">${fmtDate(new Date(k.expires))}</td>
+        <td class="text-zinc-500">${k.note || '—'}</td>
+        <td>
+          <div class="flex gap-2">
+            <button class="btn btn-sm" onclick="openExtend(${idx})" title="Extend">⏱ EXTEND</button>
+            <button class="btn btn-sm" onclick="copyKey(${idx})" title="Copy">⧉</button>
+            <button class="btn btn-sm btn-pink" onclick="deleteKey(${idx})" title="Delete">✕</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Actions ──
+  function openModal(name) {
+    document.getElementById(`modal-${name}`).classList.add('show');
+  }
+  function closeModal(name) {
+    document.getElementById(`modal-${name}`).classList.remove('show');
+  }
+
+  document.getElementById('gen-duration').addEventListener('change', e => {
+    document.getElementById('gen-custom-wrap').style.display = e.target.value === 'custom' ? 'block' : 'none';
+  });
+  document.getElementById('extend-duration').addEventListener('change', e => {
+    document.getElementById('extend-custom-wrap').style.display = e.target.value === 'custom' ? 'block' : 'none';
+  });
+
+  function generateKeys() {
+    let days = parseInt(document.getElementById('gen-duration').value);
+    if (isNaN(days)) days = parseInt(document.getElementById('gen-custom-days').value) || 30;
+    const note = document.getElementById('gen-note').value.trim();
+    const qty = Math.min(50, Math.max(1, parseInt(document.getElementById('gen-qty').value) || 1));
+
+    for (let i = 0; i < qty; i++) {
+      const now = new Date();
+      const exp = new Date(now.getTime() + days * 86400000);
+      keys.push({ key: genKey(), created: now.toISOString(), expires: exp.toISOString(), note });
+    }
+    save();
+    closeModal('generate');
+    renderTable();
+  }
+
+  function openExtend(idx) {
+    extendIdx = idx;
+    document.getElementById('extend-key-display').textContent = keys[idx].key;
+    document.getElementById('extend-current').textContent = fmtDate(new Date(keys[idx].expires));
+    openModal('extend');
+  }
+
+  function extendKey() {
+    if (extendIdx < 0) return;
+    let days = parseInt(document.getElementById('extend-duration').value);
+    if (isNaN(days)) days = parseInt(document.getElementById('extend-custom-days').value) || 30;
+    const current = new Date(keys[extendIdx].expires);
+    const base = current > new Date() ? current : new Date(); // if expired, extend from now
+    keys[extendIdx].expires = new Date(base.getTime() + days * 86400000).toISOString();
+    save();
+    closeModal('extend');
+    renderTable();
+  }
+
+  function copyKey(idx) {
+    navigator.clipboard.writeText(keys[idx].key);
+  }
+
+  function deleteKey(idx) {
+    if (!confirm(`Delete key ${keys[idx].key}?`)) return;
+    keys.splice(idx, 1);
+    save();
+    renderTable();
+  }
+
+  function exportKeys() {
+    const data = JSON.stringify(keys, null, 2);
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `s0meClean_keys_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function save() {
+    localStorage.setItem('s0meClean_keys', JSON.stringify(keys));
+  }
+
+  // Init
+  renderTable();
+</script>
+</body>
+</html>
