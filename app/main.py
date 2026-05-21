@@ -301,14 +301,18 @@ def format_size(b: int) -> str:
         return f"{b / 1024:.0f} KB"
     return f"{b} B"
 
-def get_folder_size(path: str) -> int:
+def get_folder_size(path: str, max_files: int = 80000) -> int:
+    """Get folder size with a file count cap to prevent hanging on huge dirs."""
     total = 0
+    count = 0
     try:
         for dirpath, _dirnames, filenames in os.walk(path):
             for f in filenames:
-                fp = os.path.join(dirpath, f)
+                count += 1
+                if count > max_files:
+                    return total  # good enough estimate
                 try:
-                    total += os.path.getsize(fp)
+                    total += os.path.getsize(os.path.join(dirpath, f))
                 except (OSError, PermissionError):
                     pass
     except (OSError, PermissionError):
@@ -366,7 +370,10 @@ class ScanWorker(QThread):
             else:
                 self.finished_scan.emit(f"Unknown scan: {self.scan_type}")
         except Exception as e:
-            self._log(f"ERROR: {e}")
+            try:
+                self._log(f"ERROR: {traceback.format_exc()}")
+            except Exception:
+                pass
             self.finished_scan.emit(f"Error: {e}")
 
     # ──────────── JUNK ────────────
@@ -404,48 +411,67 @@ class ScanWorker(QThread):
         self.finished_scan.emit(T("rec_junk", sz=format_size(total_freed)))
 
     # ──────────── LARGE FOLDERS ────────────
+    SKIP_DIRS = {"windows", "$recycle.bin", "system volume information",
+                 "$windows.~bt", "$windows.~ws", "recovery", "boot",
+                 "documents and settings", "perflogs", "config.msi",
+                 "$sysprepunattend", "msocache", "intel", "amd"}
+
     def _scan_largefolders(self):
         root = self.drive + "\\"
-        items = []
         try:
-            entries = [os.path.join(root, d) for d in os.listdir(root) if os.path.isdir(os.path.join(root, d))]
-        except PermissionError:
+            entries = [os.path.join(root, d) for d in os.listdir(root)
+                       if os.path.isdir(os.path.join(root, d))
+                       and d.lower() not in self.SKIP_DIRS]
+        except (PermissionError, OSError):
             entries = []
         total = max(1, len(entries))
+        found = 0
+        total_sz = 0
         for i, d in enumerate(entries):
             if self._cancel:
                 break
-            self.progress.emit(int((i / total) * 80), f"[{i+1}/{total}] {os.path.basename(d)}")
+            name = os.path.basename(d)
+            self.progress.emit(int((i / total) * 90), f"[{i+1}/{total}] {name}")
             self._log(f"Measuring: {d}")
-            sz = get_folder_size(d)
+            try:
+                sz = get_folder_size(d, max_files=50000)
+            except Exception:
+                continue
             if sz > 100 * 1024**2:
-                items.append((d, sz))
+                self._emit(d, sz, "Folder", "folder")
+                found += 1
+                total_sz += sz
+                # Dive into large folders
                 if sz > 5 * 1024**3:
                     try:
                         for sub in os.listdir(d):
                             sp = os.path.join(d, sub)
                             if os.path.isdir(sp):
-                                sz2 = get_folder_size(sp)
+                                sz2 = get_folder_size(sp, max_files=30000)
                                 if sz2 > 500 * 1024**2:
-                                    items.append((sp, sz2))
-                    except PermissionError:
+                                    self._emit(sp, sz2, "Subfolder", "folder")
+                                    found += 1
+                                    total_sz += sz2
+                    except (PermissionError, OSError):
                         pass
-        items.sort(key=lambda x: x[1], reverse=True)
-        for p, sz in items[:60]:
-            self._emit(p, sz, "Folder", "folder")
-        self.progress.emit(100, f"Done. Found: {len(items[:60])}")
-        total_sz = sum(s for _, s in items[:60])
-        self.finished_scan.emit(T("rec_folders", n=len(items[:60]), sz=format_size(total_sz)))
+        self.progress.emit(100, T("done"))
+        self.finished_scan.emit(T("rec_folders", n=found, sz=format_size(total_sz)))
 
     # ──────────── LARGE FILES ────────────
     def _scan_largefiles(self):
         root = self.drive + "\\"
         found = []
         cnt = 0
+        skip = {"windows", "$recycle.bin", "system volume information"}
         self._log(f"Scanning {root} for files > 500 MB...")
         for dirpath, _dirs, files in os.walk(root):
             if self._cancel:
                 break
+            # Skip system dirs at root level
+            rel = os.path.relpath(dirpath, root).split(os.sep)[0].lower()
+            if rel in skip:
+                _dirs.clear()
+                continue
             for f in files:
                 cnt += 1
                 if cnt % 5000 == 0:
@@ -970,29 +996,46 @@ class CyberBackground(QWidget):
 class NeonProgressBar(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(6)
+        self.setFixedHeight(8)
         self._value = 0
+        self._anim_offset = 0
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._pulse)
+        self._timer.start(40)
+
+    def _pulse(self):
+        if 0 < self._value < 100:
+            self._anim_offset = (self._anim_offset + 2) % 40
+            self.update()
 
     def setValue(self, v):
         self._value = max(0, min(100, v))
         self.update()
 
     def paintEvent(self, event):
+        import math
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
         # Background
         p.setBrush(QColor(C.PANEL2))
         p.setPen(Qt.NoPen)
-        p.drawRoundedRect(0, 0, w, h, 3, 3)
+        p.drawRoundedRect(0, 0, w, h, 4, 4)
         # Fill
         fw = int(w * self._value / 100)
         if fw > 0:
             grad = QLinearGradient(0, 0, fw, 0)
             grad.setColorAt(0, QColor(C.CYAN))
+            grad.setColorAt(0.5, QColor(C.PURPLE))
             grad.setColorAt(1, QColor(C.PINK))
             p.setBrush(grad)
-            p.drawRoundedRect(0, 0, fw, h, 3, 3)
+            p.drawRoundedRect(0, 0, fw, h, 4, 4)
+            # Glow effect
+            if self._value < 100:
+                gc = QColor(C.CYAN)
+                gc.setAlphaF(0.15 + 0.1 * math.sin(self._anim_offset * 0.15))
+                p.setBrush(gc)
+                p.drawRoundedRect(max(0, fw - 30), 0, 30, h, 4, 4)
         p.end()
 
 
@@ -1006,8 +1049,9 @@ class SidebarButton(QPushButton):
         self._icon_text = icon_text
         self._accent = accent
         self._active = False
+        self._hover = False
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedHeight(44)
+        self.setFixedHeight(46)
         self.setStyleSheet("background: transparent; border: none;")
 
     def set_active(self, active):
@@ -1020,38 +1064,44 @@ class SidebarButton(QPushButton):
         w, h = self.width(), self.height()
 
         if self._active:
-            # Active background
+            # Active — gradient bg + left neon bar + subtle glow
             grad = QLinearGradient(0, 0, w, 0)
             ac = QColor(self._accent)
-            ac.setAlphaF(0.15)
+            ac.setAlphaF(0.18)
             grad.setColorAt(0, ac)
             ac2 = QColor(self._accent)
-            ac2.setAlphaF(0.02)
+            ac2.setAlphaF(0.03)
             grad.setColorAt(1, ac2)
             p.setBrush(grad)
             p.setPen(Qt.NoPen)
-            p.drawRoundedRect(4, 2, w - 8, h - 4, 8, 8)
-            # Left accent bar
-            p.setBrush(QColor(self._accent))
-            p.drawRoundedRect(0, 8, 3, h - 16, 2, 2)
+            p.drawRoundedRect(4, 2, w - 8, h - 4, 10, 10)
+            # Left neon bar
+            bar_grad = QLinearGradient(0, 6, 0, h - 6)
+            bar_grad.setColorAt(0, QColor(self._accent))
+            bc = QColor(self._accent)
+            bc.setAlphaF(0.3)
+            bar_grad.setColorAt(1, bc)
+            p.setBrush(bar_grad)
+            p.drawRoundedRect(0, 6, 3, h - 12, 2, 2)
         elif self.underMouse():
-            hc = QColor(C.PANEL2)
-            hc.setAlphaF(0.6)
+            hc = QColor(C.PANEL3)
+            hc.setAlphaF(0.7)
             p.setBrush(hc)
             p.setPen(Qt.NoPen)
-            p.drawRoundedRect(4, 2, w - 8, h - 4, 8, 8)
+            p.drawRoundedRect(4, 2, w - 8, h - 4, 10, 10)
 
         # Icon
-        p.setFont(QFont("Segoe UI", 12))
+        p.setFont(QFont("Segoe UI", 13))
         p.setPen(QColor(self._accent if self._active else C.MUTED))
         p.drawText(QRect(14, 0, 30, h), Qt.AlignCenter, self._icon_text)
 
         # Text
-        f = QFont("Consolas", 10)
+        f = QFont("Segoe UI", 10)
         f.setBold(self._active)
+        f.setLetterSpacing(QFont.AbsoluteSpacing, 0.5 if self._active else 0)
         p.setFont(f)
         p.setPen(QColor(C.TEXT if self._active else C.DIM))
-        p.drawText(QRect(46, 0, w - 56, h), Qt.AlignVCenter | Qt.AlignLeft, self._text)
+        p.drawText(QRect(48, 0, w - 58, h), Qt.AlignVCenter | Qt.AlignLeft, self._text)
         p.end()
 
     def enterEvent(self, event):
@@ -1067,18 +1117,26 @@ class SidebarButton(QPushButton):
 class StatCard(QFrame):
     def __init__(self, label, value, accent=C.CYAN, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(80)
-        self._label = label
-        self._value = value
+        self.setFixedHeight(74)
+        self.setMinimumWidth(140)
         self._accent = accent
-        self.setStyleSheet(f"background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 10px;")
+        self.setStyleSheet(f"""
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {C.PANEL2}, stop:1 {C.PANEL});
+                border: 1px solid {C.BORDER};
+                border-radius: 10px;
+                border-top: 2px solid {accent};
+            }}
+        """)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 10, 16, 10)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(2)
         self._lbl = QLabel(label)
-        self._lbl.setFont(QFont("Consolas", 8, QFont.Bold))
-        self._lbl.setStyleSheet(f"color: {C.MUTED}; border: none;")
+        self._lbl.setFont(QFont("Segoe UI", 8, QFont.Bold))
+        self._lbl.setStyleSheet(f"color: {C.MUTED}; border: none; letter-spacing: 2px;")
         self._val = QLabel(value)
-        self._val.setFont(QFont("Consolas", 18, QFont.Bold))
+        self._val.setFont(QFont("Consolas", 18, QFont.Black))
         self._val.setStyleSheet(f"color: {accent}; border: none;")
         layout.addWidget(self._lbl)
         layout.addWidget(self._val)
@@ -1142,19 +1200,25 @@ class MainWindow(QMainWindow):
         header = QFrame()
         header.setFixedHeight(90)
         header.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border-bottom: 2px solid {C.CYAN}; }}
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.PANEL}, stop:0.5 {C.PANEL2}, stop:1 {C.PANEL});
+                border-bottom: 2px solid qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.CYAN}, stop:0.5 {C.PINK}, stop:1 {C.PURPLE});
+            }}
         """)
         hl = QHBoxLayout(header)
         hl.setContentsMargins(20, 10, 20, 10)
 
         # Logo
         logo_layout = QVBoxLayout()
+        logo_layout.setSpacing(2)
         title = QLabel("s0meClean?")
-        title.setFont(QFont("Consolas", 20, QFont.Bold))
+        title.setFont(QFont("Consolas", 22, QFont.Black))
         title.setStyleSheet(f"color: {C.CYAN}; background: transparent;")
         subtitle = QLabel(T("subtitle"))
-        subtitle.setFont(QFont("Consolas", 9))
-        subtitle.setStyleSheet(f"color: {C.PINK}; background: transparent;")
+        subtitle.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        subtitle.setStyleSheet(f"color: {C.PINK}; background: transparent; letter-spacing: 3px;")
         logo_layout.addWidget(title)
         logo_layout.addWidget(subtitle)
         hl.addLayout(logo_layout)
@@ -1222,7 +1286,13 @@ class MainWindow(QMainWindow):
     def _build_sidebar(self, parent_layout):
         sidebar = QFrame()
         sidebar.setFixedWidth(250)
-        sidebar.setStyleSheet(f"background: {C.PANEL}; border-right: 1px solid {C.BORDER};")
+        sidebar.setStyleSheet(f"""
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {C.PANEL}, stop:1 {C.BG2});
+                border-right: 1px solid {C.BORDER};
+            }}
+        """)
         sl = QVBoxLayout(sidebar)
         sl.setContentsMargins(8, 12, 8, 12)
         sl.setSpacing(4)
@@ -1265,13 +1335,17 @@ class MainWindow(QMainWindow):
         # GitHub button
         gh_btn = QPushButton(T("github_btn"))
         gh_btn.setCursor(Qt.PointingHandCursor)
-        gh_btn.setFont(QFont("Consolas", 9, QFont.Bold))
+        gh_btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
         gh_btn.setStyleSheet(f"""
             QPushButton {{
                 background: {C.PANEL2}; color: {C.DIM}; border: 1px solid {C.BORDER};
-                border-radius: 8px; padding: 8px;
+                border-radius: 10px; padding: 10px;
             }}
-            QPushButton:hover {{ color: {C.CYAN}; border-color: {C.CYAN}; }}
+            QPushButton:hover {{
+                color: {C.CYAN}; border-color: {C.CYAN};
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(0,240,255,0.08), stop:1 {C.PANEL2});
+            }}
         """)
         gh_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(f"https://github.com/{GITHUB_REPO}")))
         sl.addWidget(gh_btn)
@@ -1279,13 +1353,17 @@ class MainWindow(QMainWindow):
         # Update button
         upd_btn = QPushButton(T("check_updates"))
         upd_btn.setCursor(Qt.PointingHandCursor)
-        upd_btn.setFont(QFont("Consolas", 9, QFont.Bold))
+        upd_btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
         upd_btn.setStyleSheet(f"""
             QPushButton {{
                 background: {C.PANEL2}; color: {C.DIM}; border: 1px solid {C.BORDER};
-                border-radius: 8px; padding: 8px;
+                border-radius: 10px; padding: 10px;
             }}
-            QPushButton:hover {{ color: {C.GREEN}; border-color: {C.GREEN}; }}
+            QPushButton:hover {{
+                color: {C.GREEN}; border-color: {C.GREEN};
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(50,230,130,0.08), stop:1 {C.PANEL2});
+            }}
         """)
         upd_btn.clicked.connect(self._check_update)
         sl.addWidget(upd_btn)
@@ -1339,7 +1417,12 @@ class MainWindow(QMainWindow):
         # Recommendation box
         rec_frame = QFrame()
         rec_frame.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; }}
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.PANEL}, stop:1 {C.PANEL2});
+                border: 1px solid {C.BORDER}; border-radius: 10px;
+                border-left: 3px solid {C.PINK};
+            }}
         """)
         rec_layout = QHBoxLayout(rec_frame)
         rec_layout.setContentsMargins(12, 8, 12, 8)
@@ -1374,17 +1457,40 @@ class MainWindow(QMainWindow):
         self._tree.setSortingEnabled(True)
         self._tree.setStyleSheet(f"""
             QTreeWidget {{
-                background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER};
-                border-radius: 8px; font-family: 'Segoe UI'; font-size: 10pt;
+                background: {C.PANEL}; color: {C.TEXT};
+                border: 1px solid {C.BORDER}; border-radius: 10px;
+                font-family: 'Consolas'; font-size: 10pt;
                 alternate-background-color: {C.PANEL2};
+                outline: none;
             }}
-            QTreeWidget::item {{ padding: 4px; }}
-            QTreeWidget::item:selected {{ background: rgba(0, 240, 255, 0.12); }}
+            QTreeWidget::item {{
+                padding: 6px 4px;
+                border-bottom: 1px solid rgba(42, 54, 96, 0.5);
+            }}
+            QTreeWidget::item:selected {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(0,240,255,0.15), stop:1 rgba(168,85,247,0.08));
+                border-left: 3px solid {C.CYAN};
+            }}
+            QTreeWidget::item:hover {{
+                background: rgba(0,240,255,0.06);
+            }}
             QHeaderView::section {{
-                background: {C.PANEL2}; color: {C.CYAN}; border: none;
-                font-family: Consolas; font-weight: bold; font-size: 9pt;
-                padding: 6px 8px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {C.PANEL3}, stop:1 {C.PANEL2});
+                color: {C.CYAN}; border: none;
+                font-family: 'Segoe UI'; font-weight: bold; font-size: 9pt;
+                padding: 8px 10px; letter-spacing: 1px;
+                border-bottom: 2px solid {C.CYAN};
             }}
+            QScrollBar:vertical {{
+                background: {C.PANEL}; width: 8px; border: none; border-radius: 4px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {C.BORDER}; border-radius: 4px; min-height: 30px;
+            }}
+            QScrollBar::handle:vertical:hover {{ background: {C.CYAN_D}; }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
         """)
         layout.addWidget(self._tree, 1)
 
@@ -1421,14 +1527,18 @@ class MainWindow(QMainWindow):
         act_layout.addWidget(self._sel_label)
 
         self._btn_delete = QPushButton(T("delete_sel"))
-        self._btn_delete.setFont(QFont("Consolas", 10, QFont.Bold))
+        self._btn_delete.setFont(QFont("Segoe UI", 10, QFont.Bold))
         self._btn_delete.setCursor(Qt.PointingHandCursor)
         self._btn_delete.setStyleSheet(f"""
             QPushButton {{
-                background: {C.RED}; color: white; border: none; border-radius: 8px;
-                padding: 10px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.RED}, stop:1 {C.PINK_D});
+                color: white; border: none; border-radius: 10px; padding: 12px;
             }}
-            QPushButton:hover {{ background: #ff6080; }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #ff6080, stop:1 {C.PINK});
+            }}
             QPushButton:disabled {{ background: {C.PANEL2}; color: {C.MUTED}; }}
         """)
         self._btn_delete.setEnabled(False)
@@ -1440,23 +1550,32 @@ class MainWindow(QMainWindow):
         btn_open.setCursor(Qt.PointingHandCursor)
         btn_open.setStyleSheet(f"""
             QPushButton {{
-                background: {C.CYAN}; color: {C.BG}; border: none; border-radius: 8px;
-                padding: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.CYAN}, stop:1 {C.CYAN_D});
+                color: {C.BG}; border: none; border-radius: 10px; padding: 10px;
             }}
-            QPushButton:hover {{ background: {C.CYAN_D}; }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.CYAN_D}, stop:1 {C.CYAN});
+            }}
         """)
         btn_open.clicked.connect(self._open_in_explorer)
         act_layout.addWidget(btn_open)
 
         btn_sel_all = QPushButton(T("select_all"))
-        btn_sel_all.setFont(QFont("Segoe UI", 9))
+        btn_sel_all.setFont(QFont("Segoe UI", 9, QFont.Bold))
         btn_sel_all.setCursor(Qt.PointingHandCursor)
         btn_sel_all.setStyleSheet(f"""
             QPushButton {{
-                background: {C.PANEL2}; color: {C.PINK}; border: none; border-radius: 8px;
-                padding: 8px;
+                background: {C.PANEL2}; color: {C.PINK};
+                border: 1px solid rgba(255,30,130,0.3);
+                border-radius: 10px; padding: 10px;
             }}
-            QPushButton:hover {{ background: {C.PINK}; color: {C.BG}; }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.PINK}, stop:1 {C.PINK_D});
+                color: white; border-color: {C.PINK};
+            }}
         """)
         btn_sel_all.clicked.connect(self._select_all)
         act_layout.addWidget(btn_sel_all)
@@ -1822,7 +1941,14 @@ class MainWindow(QMainWindow):
     def _build_statusbar(self, parent_layout):
         sb = QFrame()
         sb.setFixedHeight(36)
-        sb.setStyleSheet(f"background: {C.PANEL2}; border-top: 1px solid {C.CYAN};")
+        sb.setStyleSheet(f"""
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.PANEL2}, stop:0.5 {C.PANEL}, stop:1 {C.PANEL2});
+                border-top: 2px solid qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {C.CYAN}, stop:0.5 {C.PINK}, stop:1 {C.PURPLE});
+            }}
+        """)
         sbl = QHBoxLayout(sb)
         sbl.setContentsMargins(12, 0, 12, 0)
         st = QLabel(T("status"))
@@ -1879,18 +2005,27 @@ class MainWindow(QMainWindow):
             if bold:
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background: {color}; color: {C.BG}; border: none;
-                        border-radius: 8px; padding: 10px 8px; text-align: left;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                            stop:0 {color}, stop:1 rgba(0,0,0,0.1));
+                        color: {C.BG}; border: none;
+                        border-radius: 10px; padding: 10px 10px; text-align: left;
                     }}
-                    QPushButton:hover {{ opacity: 0.9; }}
+                    QPushButton:hover {{
+                        background: {color};
+                    }}
                 """)
             else:
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background: {C.PANEL2}; color: {color}; border: none;
-                        border-radius: 8px; padding: 8px; text-align: left;
+                        background: {C.PANEL2}; color: {color};
+                        border: 1px solid rgba(42,54,96,0.5);
+                        border-radius: 10px; padding: 8px 10px; text-align: left;
                     }}
-                    QPushButton:hover {{ background: {color}; color: {C.BG}; }}
+                    QPushButton:hover {{
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                            stop:0 {color}, stop:1 rgba(0,0,0,0.2));
+                        color: {C.BG}; border-color: {color};
+                    }}
                 """)
             btn.clicked.connect(callback)
             self._action_container.addWidget(btn)
@@ -1904,6 +2039,7 @@ class MainWindow(QMainWindow):
         self._tree.clear()
         self._log_text.clear()
         self._progress.setValue(0)
+        self._result_info.setText("")
         self._rec_text.setText(T("scanning"))
         self._btn_delete.setEnabled(False)
         self._sel_label.setText(T("scanning"))
@@ -2151,38 +2287,43 @@ class MainWindow(QMainWindow):
             pass
 
     # ── AUTO-UPDATER ──
+    _update_result = Signal(str)  # "" = up to date, else version
+
     def _check_update(self):
         self._status_label.setText(T("checking_upd"))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
 
-        def _check():
+        try:
+            self._update_result.disconnect()
+        except Exception:
+            pass
+        self._update_result.connect(self._on_update_result)
+
+        def _thread():
             try:
                 req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "s0meClean"})
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=8) as resp:
                     data = json.loads(resp.read().decode())
                 remote = data.get("tag_name", "").lstrip("v")
                 if remote and remote != VERSION:
-                    return remote
+                    self._update_result.emit(remote)
+                    return
             except Exception:
                 pass
-            return None
-
-        def _done(ver):
-            if ver:
-                r = QMessageBox.question(self, T("upd_available_t"),
-                                         T("upd_available_m", ver=ver, cur=VERSION),
-                                         QMessageBox.Yes | QMessageBox.No)
-                if r == QMessageBox.Yes:
-                    self._apply_update()
-            else:
-                self._status_label.setText(f"{T('up_to_date')} (v{VERSION})")
-                self._status_label.setStyleSheet(f"color: {C.GREEN};")
-
-        def _thread():
-            ver = _check()
-            QTimer.singleShot(0, lambda: _done(ver))
+            self._update_result.emit("")
 
         threading.Thread(target=_thread, daemon=True).start()
+
+    def _on_update_result(self, ver):
+        if ver:
+            r = QMessageBox.question(self, T("upd_available_t"),
+                                     T("upd_available_m", ver=ver, cur=VERSION),
+                                     QMessageBox.Yes | QMessageBox.No)
+            if r == QMessageBox.Yes:
+                self._apply_update()
+        else:
+            self._status_label.setText(f"{T('up_to_date')} (v{VERSION})")
+            self._status_label.setStyleSheet(f"color: {C.GREEN};")
 
     def _apply_update(self):
         self._status_label.setText(T("downloading"))
