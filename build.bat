@@ -12,7 +12,7 @@ if not exist venv (
 
 echo [2/4] Installing dependencies...
 call venv\Scripts\activate.bat
-pip install PySide6 pyinstaller -q
+pip install PySide6 psutil pyinstaller -q
 
 echo [3/4] Building EXE...
 pyinstaller --noconfirm --onedir --windowed ^
