@@ -3,11 +3,11 @@
 s0meClean? — System Optimization Suite
 PySide6 GUI  ·  v2.0.0  ·  MIT License  ·  solevoyq
 
-Modules: Cleaner · Game Boost · Monitor · Security · Drivers · Tweaks · Plugins
+Modules: Cleaner · Game Boost · Monitor · Security · Drivers · Tweaks · Plugins · AI Terminal
 """
 
-import ctypes, json, os, platform, shutil, subprocess, sys, threading, time, traceback
-import urllib.request, zipfile, winreg, locale, struct
+import ctypes, json, math, os, platform, random, re, shutil, subprocess, sys
+import threading, time, traceback, urllib.request, zipfile, winreg, locale, struct
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -32,11 +32,12 @@ from PySide6.QtWidgets import (
     QComboBox, QGraphicsOpacityEffect, QSplitter, QSizePolicy,
     QTextEdit, QDialog, QDialogButtonBox, QGroupBox, QSpacerItem,
     QSlider, QPlainTextEdit, QTabWidget, QTableWidget, QTableWidgetItem,
+    QGraphicsDropShadowEffect,
 )
 from PySide6.QtCore import (
     Qt, QTimer, Signal, QThread, QPropertyAnimation, QEasingCurve,
     QUrl, QSize, QPoint, QRect, QParallelAnimationGroup,
-    QSequentialAnimationGroup, Property,
+    QSequentialAnimationGroup, Property, QRectF,
 )
 from PySide6.QtGui import (
     QFont, QColor, QPalette, QPainter, QLinearGradient, QRadialGradient,
@@ -46,7 +47,7 @@ from PySide6.QtGui import (
 
 
 # ═══════════════════════════════════════════════════
-#  COLORS — Cyberpunk Neon Palette
+#  COLORS — Cyberpunk Neon Palette (Premium v2)
 # ═══════════════════════════════════════════════════
 class C:
     BG       = "#0a0e1a"
@@ -67,6 +68,85 @@ class C:
     ORANGE   = "#ffb43c"
     RED      = "#ff4664"
     PURPLE   = "#a855f7"
+    SIDEBAR  = "#0c1122"
+
+
+# ═══════════════════════════════════════════════════
+#  GLOBAL QSS — Premium Cyberpunk Stylesheet
+# ═══════════════════════════════════════════════════
+GLOBAL_QSS = f"""
+QMainWindow {{
+    background-color: {C.BG};
+}}
+QToolTip {{
+    background: {C.PANEL2};
+    color: {C.CYAN};
+    border: 1px solid {C.CYAN_D};
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Consolas';
+    font-size: 9pt;
+}}
+QScrollBar:vertical {{
+    border: none;
+    background: {C.BG};
+    width: 6px;
+    margin: 0;
+}}
+QScrollBar::handle:vertical {{
+    background: {C.BORDER};
+    min-height: 20px;
+    border-radius: 3px;
+}}
+QScrollBar::handle:vertical:hover {{
+    background: {C.CYAN};
+}}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+    border: none; background: none; height: 0;
+}}
+QScrollBar:horizontal {{
+    border: none;
+    background: {C.BG};
+    height: 6px;
+    margin: 0;
+}}
+QScrollBar::handle:horizontal {{
+    background: {C.BORDER};
+    min-width: 20px;
+    border-radius: 3px;
+}}
+QScrollBar::handle:horizontal:hover {{
+    background: {C.CYAN};
+}}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+    border: none; background: none; width: 0;
+}}
+QScrollArea {{
+    background: transparent;
+    border: none;
+}}
+QMessageBox {{
+    background: {C.PANEL};
+    color: {C.TEXT};
+}}
+QMessageBox QLabel {{
+    color: {C.TEXT};
+}}
+QMessageBox QPushButton {{
+    background: {C.PANEL2};
+    color: {C.CYAN};
+    border: 1px solid {C.BORDER};
+    border-radius: 6px;
+    padding: 6px 20px;
+    font-family: 'Consolas';
+    font-weight: bold;
+    min-width: 80px;
+}}
+QMessageBox QPushButton:hover {{
+    background: {C.PANEL3};
+    border-color: {C.CYAN};
+}}
+"""
 
 
 # ═══════════════════════════════════════════════════
@@ -81,8 +161,8 @@ STRINGS = {
     "total":          {"EN": "TOTAL",                         "RU": "ВСЕГО"},
     "used":           {"EN": "USED",                          "RU": "ЗАНЯТО"},
     "free":           {"EN": "FREE",                          "RU": "СВОБОДНО"},
-    "admin_yes":      {"EN": "● ADMIN",                       "RU": "● АДМИН"},
-    "admin_no":       {"EN": "● NO ADMIN",                    "RU": "● НЕТ ПРАВ"},
+    "admin_yes":      {"EN": "ADMIN",                         "RU": "АДМИН"},
+    "admin_no":       {"EN": "NO ADMIN",                      "RU": "НЕТ ПРАВ"},
 
     # Sidebar tabs
     "tab_clean":      {"EN": "CLEANER",                       "RU": "ОЧИСТКА"},
@@ -92,11 +172,12 @@ STRINGS = {
     "tab_drivers":    {"EN": "DRIVERS",                       "RU": "ДРАЙВЕРЫ"},
     "tab_tweaks":     {"EN": "TWEAKS",                        "RU": "ТВИКИ"},
     "tab_plugins":    {"EN": "PLUGINS",                       "RU": "ПЛАГИНЫ"},
+    "tab_terminal":   {"EN": "TERMINAL",                      "RU": "ТЕРМИНАЛ"},
     "tab_settings":   {"EN": "SETTINGS",                      "RU": "НАСТРОЙКИ"},
 
     "scan_actions":   {"EN": "// SCAN ACTIONS",               "RU": "// ДЕЙСТВИЯ"},
-    "github_btn":     {"EN": "★  GITHUB",                     "RU": "★  GITHUB"},
-    "check_updates":  {"EN": "↻  CHECK UPDATES",              "RU": "↻  ОБНОВЛЕНИЯ"},
+    "github_btn":     {"EN": "GITHUB",                        "RU": "GITHUB"},
+    "check_updates":  {"EN": "CHECK UPDATES",                 "RU": "ОБНОВЛЕНИЯ"},
 
     # Clean page
     "results":        {"EN": "// RESULTS",                    "RU": "// РЕЗУЛЬТАТЫ"},
@@ -105,32 +186,32 @@ STRINGS = {
                        "RU": "Выберите действие сканирования в боковой панели."},
     "activity":       {"EN": "ACTIVITY",                      "RU": "АКТИВНОСТЬ"},
     "nothing_sel":    {"EN": "Nothing selected",              "RU": "Ничего не выбрано"},
-    "delete_sel":     {"EN": "🗑  DELETE SELECTED",            "RU": "🗑  УДАЛИТЬ ВЫБРАННОЕ"},
-    "open_explorer":  {"EN": "📂  OPEN IN EXPLORER",          "RU": "📂  В ПРОВОДНИКЕ"},
-    "select_all":     {"EN": "SELECT ALL (Ctrl+A)",           "RU": "ВЫБРАТЬ ВСЁ (Ctrl+A)"},
+    "delete_sel":     {"EN": "DELETE SELECTED",               "RU": "УДАЛИТЬ ВЫБРАННОЕ"},
+    "open_explorer":  {"EN": "OPEN IN EXPLORER",              "RU": "В ПРОВОДНИКЕ"},
+    "select_all":     {"EN": "SELECT ALL",                    "RU": "ВЫБРАТЬ ВСЁ"},
     "scanning":       {"EN": "Scanning...",                   "RU": "Сканирование..."},
     "col_size":       {"EN": "SIZE",                          "RU": "РАЗМЕР"},
     "col_path":       {"EN": "PATH",                          "RU": "ПУТЬ"},
     "col_type":       {"EN": "TYPE",                          "RU": "ТИП"},
 
     # Scan sidebar actions
-    "quick_audit":    {"EN": "⚡ QUICK AUDIT",                "RU": "⚡ БЫСТРЫЙ АУДИТ"},
-    "largest_folders": {"EN": "📁 Largest folders",           "RU": "📁 Крупные папки"},
-    "phantom_progs":  {"EN": "👻 Phantom programs",           "RU": "👻 Фантомные программы"},
-    "orphan_folders": {"EN": "🔗 Orphan folders",             "RU": "🔗 Сиротские папки"},
-    "large_files":    {"EN": "📦 Large files (>500MB)",       "RU": "📦 Большие файлы (>500МБ)"},
-    "installed_progs": {"EN": "💾 Installed programs",        "RU": "💾 Установленные программы"},
-    "junk_temp":      {"EN": "🗑 Junk (Temp, caches)",        "RU": "🗑 Мусор (Temp, кэш)"},
-    "recycle_bin":    {"EN": "♻ Recycle bin",                  "RU": "♻ Корзина"},
-    "hiberfil":       {"EN": "💤 Hiberfil.sys",               "RU": "💤 Hiberfil.sys"},
-    "browser_cache":  {"EN": "🌐 Browser caches",            "RU": "🌐 Кэш браузеров"},
+    "quick_audit":    {"EN": "QUICK AUDIT",                   "RU": "БЫСТРЫЙ АУДИТ"},
+    "largest_folders": {"EN": "Largest folders",              "RU": "Крупные папки"},
+    "phantom_progs":  {"EN": "Phantom programs",              "RU": "Фантомные программы"},
+    "orphan_folders": {"EN": "Orphan folders",                "RU": "Сиротские папки"},
+    "large_files":    {"EN": "Large files (>500MB)",          "RU": "Большие файлы (>500МБ)"},
+    "installed_progs": {"EN": "Installed programs",           "RU": "Установленные программы"},
+    "junk_temp":      {"EN": "Junk (Temp, caches)",           "RU": "Мусор (Temp, кэш)"},
+    "recycle_bin":    {"EN": "Recycle bin",                    "RU": "Корзина"},
+    "hiberfil":       {"EN": "Hiberfil.sys",                  "RU": "Hiberfil.sys"},
+    "browser_cache":  {"EN": "Browser caches",                "RU": "Кэш браузеров"},
 
     # Boost page
     "boost_title":    {"EN": "// GAME BOOST",                 "RU": "// УСКОРЕНИЕ ИГР"},
     "boost_desc":     {"EN": "Optimize your system for maximum gaming performance.",
                        "RU": "Оптимизируйте систему для максимальной игровой производительности."},
-    "boost_enable":   {"EN": "🚀  ENABLE GAME MODE",          "RU": "🚀  ВКЛЮЧИТЬ ИГРОВОЙ РЕЖИМ"},
-    "boost_disable":  {"EN": "⏹  DISABLE GAME MODE",          "RU": "⏹  ОТКЛЮЧИТЬ ИГРОВОЙ РЕЖИМ"},
+    "boost_enable":   {"EN": "ENABLE GAME MODE",              "RU": "ВКЛЮЧИТЬ ИГРОВОЙ РЕЖИМ"},
+    "boost_disable":  {"EN": "DISABLE GAME MODE",             "RU": "ОТКЛЮЧИТЬ ИГРОВОЙ РЕЖИМ"},
     "boost_active":   {"EN": "GAME MODE ACTIVE",              "RU": "ИГРОВОЙ РЕЖИМ АКТИВЕН"},
     "boost_inactive": {"EN": "GAME MODE INACTIVE",            "RU": "ИГРОВОЙ РЕЖИМ НЕАКТИВЕН"},
     "boost_priority": {"EN": "Set process priority to High",  "RU": "Установить приоритет процесса на Высокий"},
@@ -166,25 +247,25 @@ STRINGS = {
                        "RU": "Проверка автозагрузки и подозрительных процессов."},
     "sec_startup":    {"EN": "// STARTUP APPS",               "RU": "// АВТОЗАГРУЗКА"},
     "sec_suspicious": {"EN": "// SUSPICIOUS PROCESSES",       "RU": "// ПОДОЗРИТЕЛЬНЫЕ ПРОЦЕССЫ"},
-    "sec_scan":       {"EN": "🔍  SCAN SECURITY",              "RU": "🔍  СКАНИРОВАТЬ"},
-    "sec_safe":       {"EN": "🟢  SYSTEM SAFE",                "RU": "🟢  СИСТЕМА БЕЗОПАСНА"},
-    "sec_warning":    {"EN": "🟡  WARNINGS FOUND",             "RU": "🟡  НАЙДЕНЫ ПРЕДУПРЕЖДЕНИЯ"},
-    "sec_risk":       {"EN": "🔴  RISKS DETECTED",             "RU": "🔴  ОБНАРУЖЕНЫ РИСКИ"},
+    "sec_scan":       {"EN": "SCAN SECURITY",                 "RU": "СКАНИРОВАТЬ"},
+    "sec_safe":       {"EN": "SYSTEM SAFE",                   "RU": "СИСТЕМА БЕЗОПАСНА"},
+    "sec_warning":    {"EN": "WARNINGS FOUND",                "RU": "НАЙДЕНЫ ПРЕДУПРЕЖДЕНИЯ"},
+    "sec_risk":       {"EN": "RISKS DETECTED",                "RU": "ОБНАРУЖЕНЫ РИСКИ"},
     "sec_disable":    {"EN": "DISABLE",                       "RU": "ОТКЛЮЧИТЬ"},
     "sec_location":   {"EN": "LOCATION",                      "RU": "РАСПОЛОЖЕНИЕ"},
     "sec_status":     {"EN": "STATUS",                        "RU": "СТАТУС"},
 
     # Drivers page
     "drv_title":      {"EN": "// DRIVER CHECKER",             "RU": "// ПРОВЕРКА ДРАЙВЕРОВ"},
-    "drv_desc":       {"EN": "Check installed drivers and their versions.",
-                       "RU": "Проверка установленных драйверов и их версий."},
-    "drv_scan":       {"EN": "🔍  CHECK DRIVERS",              "RU": "🔍  ПРОВЕРИТЬ ДРАЙВЕРЫ"},
+    "drv_desc":       {"EN": "Check installed drivers and find available updates.",
+                       "RU": "Проверка драйверов и поиск обновлений."},
+    "drv_scan":       {"EN": "CHECK DRIVERS",                 "RU": "ПРОВЕРИТЬ ДРАЙВЕРЫ"},
     "drv_device":     {"EN": "DEVICE",                        "RU": "УСТРОЙСТВО"},
     "drv_version":    {"EN": "VERSION",                       "RU": "ВЕРСИЯ"},
     "drv_date":       {"EN": "DATE",                          "RU": "ДАТА"},
     "drv_status_col": {"EN": "STATUS",                        "RU": "СТАТУС"},
     "drv_ok":         {"EN": "OK",                            "RU": "ОК"},
-    "drv_update":     {"EN": "Update Available",              "RU": "Доступно обновление"},
+    "drv_update":     {"EN": "UPDATE AVAILABLE",              "RU": "ЕСТЬ ОБНОВЛЕНИЕ"},
 
     # Tweaks page
     "twk_title":      {"EN": "// SYSTEM TWEAKS",              "RU": "// СИСТЕМНЫЕ ТВИКИ"},
@@ -236,7 +317,7 @@ STRINGS = {
     "plg_title":      {"EN": "// PLUGINS & SCRIPTS",          "RU": "// ПЛАГИНЫ И СКРИПТЫ"},
     "plg_desc":       {"EN": "Write and run custom Python scripts. Access system info via the API.",
                        "RU": "Пишите и запускайте Python скрипты. Доступ к системной информации через API."},
-    "plg_run":        {"EN": "▶  RUN",                         "RU": "▶  ЗАПУСК"},
+    "plg_run":        {"EN": "RUN",                           "RU": "ЗАПУСК"},
     "plg_clear":      {"EN": "CLEAR",                         "RU": "ОЧИСТИТЬ"},
     "plg_output":     {"EN": "// OUTPUT",                     "RU": "// ВЫВОД"},
     "plg_editor":     {"EN": "// SCRIPT EDITOR",              "RU": "// РЕДАКТОР СКРИПТОВ"},
@@ -248,14 +329,22 @@ STRINGS = {
     "plg_running":    {"EN": "Running script...",             "RU": "Выполнение скрипта..."},
     "plg_done":       {"EN": "Script finished.",              "RU": "Скрипт завершён."},
 
+    # Terminal page
+    "term_title":     {"EN": "// AI COMMAND TERMINAL",        "RU": "// AI КОМАНДНЫЙ ТЕРМИНАЛ"},
+    "term_desc":      {"EN": "Type natural commands to control the system.",
+                       "RU": "Вводите команды на естественном языке для управления системой."},
+    "term_input":     {"EN": "Type a command...",             "RU": "Введите команду..."},
+    "term_welcome":   {"EN": "[s0meClean? AI Terminal v2.0]\n[Ready] Type a command. Examples:\n  > check dota folder\n  > clean temporary memory\n  > kill heavy tasks\n  > scan disk C\n  > system info\n",
+                       "RU": "[s0meClean? AI Терминал v2.0]\n[Готов] Введите команду. Примеры:\n  > check dota folder\n  > clean temporary memory\n  > kill heavy tasks\n  > scan disk C\n  > system info\n"},
+
     # Settings page
     "settings_title": {"EN": "// SETTINGS",                   "RU": "// НАСТРОЙКИ"},
     "about":          {"EN": "ABOUT",                         "RU": "О ПРОГРАММЕ"},
     "about_text":     {"EN": "s0meClean? — System Optimization Suite.\n"
-                             "Cleaner · Game Boost · Monitor · Security · Drivers · Tweaks · Plugins\n"
+                             "Cleaner · Game Boost · Monitor · Security · Drivers · Tweaks · Plugins · AI Terminal\n"
                              "Open source, MIT License. by solevoyq",
                        "RU": "s0meClean? — Комплекс оптимизации системы.\n"
-                             "Очистка · Ускорение · Монитор · Защита · Драйверы · Твики · Плагины\n"
+                             "Очистка · Ускорение · Монитор · Защита · Драйверы · Твики · Плагины · AI Терминал\n"
                              "Открытый код, лицензия MIT. by solevoyq"},
     "access_key":     {"EN": "ACCESS KEY",                    "RU": "КЛЮЧ ДОСТУПА"},
     "activate":       {"EN": "ACTIVATE",                      "RU": "АКТИВИРОВАТЬ"},
@@ -348,14 +437,14 @@ STRINGS = {
                        "RU": "Выберите папку — покажет крупнейшие подпапки и файлы внутри."},
     "path_label":     {"EN": "Path:",                         "RU": "Путь:"},
     "pick_folder":    {"EN": "PICK FOLDER",                   "RU": "ВЫБРАТЬ ПАПКУ"},
-    "scan_go":        {"EN": "SCAN  ▶",                       "RU": "СКАН  ▶"},
+    "scan_go":        {"EN": "SCAN",                          "RU": "СКАН"},
     "custom_hint":    {"EN": "Results will appear after scan.",
                        "RU": "Результаты появятся после скана."},
 
     # Notifications
-    "notif_high_cpu": {"EN": "⚠ High CPU usage: {v}%",       "RU": "⚠ Высокая нагрузка ЦПУ: {v}%"},
-    "notif_low_disk": {"EN": "⚠ Low disk space: {v}",        "RU": "⚠ Мало места на диске: {v}"},
-    "notif_high_ram": {"EN": "⚠ High RAM usage: {v}%",       "RU": "⚠ Высокое использование ОЗУ: {v}%"},
+    "notif_high_cpu": {"EN": "High CPU usage: {v}%",          "RU": "Высокая нагрузка ЦПУ: {v}%"},
+    "notif_low_disk": {"EN": "Low disk space: {v}",           "RU": "Мало места на диске: {v}"},
+    "notif_high_ram": {"EN": "High RAM usage: {v}%",          "RU": "Высокое использование ОЗУ: {v}%"},
 }
 
 
@@ -450,6 +539,38 @@ class ScanItem:
 
 
 # ═══════════════════════════════════════════════════
+#  DRIVER UPDATE CATALOG (Simulated 2026 manifests)
+# ═══════════════════════════════════════════════════
+DRIVER_CATALOG = {
+    "nvidia":   {"match": ["nvidia", "geforce", "rtx", "gtx"], "latest": "595.60", "name": "NVIDIA Game Ready Driver"},
+    "amd_gpu":  {"match": ["amd", "radeon", "rx "],            "latest": "24.7.1",  "name": "AMD Adrenalin"},
+    "intel_gpu": {"match": ["intel", "iris", "uhd graphics"],  "latest": "32.0.101.6256", "name": "Intel Arc/Iris Driver"},
+    "realtek":  {"match": ["realtek", "audio"],                "latest": "6.0.9600.1", "name": "Realtek HD Audio"},
+    "intel_wifi": {"match": ["wi-fi 6", "ax2", "ax1", "wireless-ac"], "latest": "24.10.0.18", "name": "Intel Wi-Fi 6E"},
+    "intel_net": {"match": ["intel(r) ethernet", "i225", "i226"], "latest": "13.2.0.1", "name": "Intel Ethernet"},
+}
+
+def _check_driver_update(device_name, current_version):
+    """Check if a driver has an update in our catalog. Returns (has_update, latest_ver, catalog_name)."""
+    dl = device_name.lower()
+    for _, info in DRIVER_CATALOG.items():
+        if any(m in dl for m in info["match"]):
+            try:
+                latest = info["latest"]
+                # Simple version comparison
+                cv = [int(x) for x in re.findall(r"\d+", current_version)[:4]]
+                lv = [int(x) for x in re.findall(r"\d+", latest)[:4]]
+                while len(cv) < len(lv): cv.append(0)
+                while len(lv) < len(cv): lv.append(0)
+                if lv > cv:
+                    return True, latest, info["name"]
+            except (ValueError, IndexError):
+                pass
+            return False, info["latest"], info["name"]
+    return False, "", ""
+
+
+# ═══════════════════════════════════════════════════
 #  SCAN WORKER THREAD
 # ═══════════════════════════════════════════════════
 class ScanWorker(QThread):
@@ -511,8 +632,7 @@ class ScanWorker(QThread):
         ]
         total_freed = 0
         for i, (p, name) in enumerate(locs):
-            if self._cancel:
-                break
+            if self._cancel: break
             self.progress.emit(int((i / len(locs)) * 100), f"[{i+1}/{len(locs)}] {name}")
             self._log(f"Check: {name}")
             if p and os.path.isdir(p):
@@ -522,7 +642,6 @@ class ScanWorker(QThread):
                     total_freed += sz
         self.finished_scan.emit(T("rec_junk", sz=format_size(total_freed)))
 
-    # ──────────── LARGE FOLDERS ────────────
     SKIP_DIRS = {"windows", "$recycle.bin", "system volume information",
                  "$windows.~bt", "$windows.~ws", "recovery", "boot",
                  "documents and settings", "perflogs", "config.msi",
@@ -537,11 +656,9 @@ class ScanWorker(QThread):
         except (PermissionError, OSError):
             entries = []
         total = max(1, len(entries))
-        found = 0
-        total_sz = 0
+        found, total_sz = 0, 0
         for i, d in enumerate(entries):
-            if self._cancel:
-                break
+            if self._cancel: break
             name = os.path.basename(d)
             self.progress.emit(int((i / total) * 90), f"[{i+1}/{total}] {name}")
             self._log(f"Measuring: {d}")
@@ -551,8 +668,7 @@ class ScanWorker(QThread):
                 continue
             if sz > 100 * 1024**2:
                 self._emit(d, sz, "Folder", "folder")
-                found += 1
-                total_sz += sz
+                found += 1; total_sz += sz
                 if sz > 5 * 1024**3:
                     try:
                         for sub in os.listdir(d):
@@ -561,27 +677,22 @@ class ScanWorker(QThread):
                                 sz2 = get_folder_size(sp, max_files=30000)
                                 if sz2 > 500 * 1024**2:
                                     self._emit(sp, sz2, "Subfolder", "folder")
-                                    found += 1
-                                    total_sz += sz2
+                                    found += 1; total_sz += sz2
                     except (PermissionError, OSError):
                         pass
         self.progress.emit(100, T("done"))
         self.finished_scan.emit(T("rec_folders", n=found, sz=format_size(total_sz)))
 
-    # ──────────── LARGE FILES ────────────
     def _scan_largefiles(self):
         root = self.drive + "\\"
-        found = []
-        cnt = 0
+        found, cnt = [], 0
         skip = {"windows", "$recycle.bin", "system volume information"}
         self._log(f"Scanning {root} for files > 500 MB...")
         for dirpath, _dirs, files in os.walk(root):
-            if self._cancel:
-                break
+            if self._cancel: break
             rel = os.path.relpath(dirpath, root).split(os.sep)[0].lower()
             if rel in skip:
-                _dirs.clear()
-                continue
+                _dirs.clear(); continue
             for f in files:
                 cnt += 1
                 if cnt % 5000 == 0:
@@ -603,7 +714,6 @@ class ScanWorker(QThread):
         self.progress.emit(100, f"Done. Files: {len(found[:60])}")
         self.finished_scan.emit(T("rec_files", n=len(found[:60])))
 
-    # ──────────── PHANTOMS ────────────
     def _scan_phantoms(self):
         reg_paths = [
             (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
@@ -633,8 +743,7 @@ class ScanWorker(QThread):
         found = 0
         total = max(1, len(entries))
         for i, (dn, il, us, es, rp) in enumerate(entries):
-            if self._cancel:
-                break
+            if self._cancel: break
             self.progress.emit(int((i / total) * 100), f"[{i+1}/{total}] {dn}")
             if il and not os.path.exists(il):
                 exe_ok = False
@@ -648,12 +757,8 @@ class ScanWorker(QThread):
                     found += 1
                     self._log(f"PHANTOM: {dn}")
         self.progress.emit(100, f"Phantoms: {found}")
-        if found == 0:
-            self.finished_scan.emit(T("rec_no_phantom"))
-        else:
-            self.finished_scan.emit(T("rec_phantom", n=found))
+        self.finished_scan.emit(T("rec_no_phantom") if found == 0 else T("rec_phantom", n=found))
 
-    # ──────────── ORPHAN FOLDERS ────────────
     def _scan_orphans(self):
         known = set()
         reg_paths = [
@@ -667,15 +772,13 @@ class ScanWorker(QThread):
                     try:
                         sub = winreg.OpenKey(key, winreg.EnumKey(key, i))
                         il = self._reg_val(sub, "InstallLocation")
-                        if il:
-                            known.add(il.rstrip("\\").lower())
+                        if il: known.add(il.rstrip("\\").lower())
                         winreg.CloseKey(sub)
                     except OSError:
                         pass
                 winreg.CloseKey(key)
             except OSError:
                 pass
-
         check_roots = [r"C:\Program Files", r"C:\Program Files (x86)", r"C:\Games"]
         all_dirs = []
         for cr in check_roots:
@@ -690,8 +793,7 @@ class ScanWorker(QThread):
                 "reference assemblies","msbuild","internet explorer","winsxs","nvidia corporation",
                 "intel","amd","realtek","google","mozilla maintenance service","vulkanrt"}
         for i, d in enumerate(all_dirs):
-            if self._cancel:
-                break
+            if self._cancel: break
             self.progress.emit(int((i / total) * 100), f"[{i+1}/{total}] {os.path.basename(d)}")
             p = d.rstrip("\\").lower()
             if p in known or os.path.basename(d).lower() in skip:
@@ -706,7 +808,6 @@ class ScanWorker(QThread):
         total_sz = sum(s for _, s in orphans)
         self.finished_scan.emit(T("rec_orphans", n=len(orphans), sz=format_size(total_sz)))
 
-    # ──────────── INSTALLED PROGRAMS ────────────
     def _scan_installed(self):
         reg_paths = [
             (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
@@ -737,12 +838,10 @@ class ScanWorker(QThread):
                 winreg.CloseKey(key)
             except OSError:
                 pass
-
         computed = []
         total = max(1, len(entries))
         for i, (dn, pub, ver, es, il, us) in enumerate(entries):
-            if self._cancel:
-                break
+            if self._cancel: break
             self.progress.emit(int((i / total) * 80), f"[{i+1}/{total}] {dn}")
             sz = int(es) * 1024 if es else 0
             if sz == 0 and il and os.path.isdir(il):
@@ -755,7 +854,6 @@ class ScanWorker(QThread):
         self.progress.emit(100, f"Programs: {len(computed)}")
         self.finished_scan.emit(T("rec_installed", n=len(computed)))
 
-    # ──────────── RECYCLE BIN ────────────
     def _scan_recyclebin(self):
         self.progress.emit(30, "Reading recycle bin...")
         try:
@@ -763,8 +861,7 @@ class ScanWorker(QThread):
                 ["powershell", "-NoProfile", "-Command",
                  "(New-Object -ComObject Shell.Application).NameSpace(0xA).Items() | "
                  "Measure-Object -Property Size -Sum | Select-Object -ExpandProperty Sum"],
-                capture_output=True, text=True, timeout=30
-            )
+                capture_output=True, text=True, timeout=30)
             sz = int(float(result.stdout.strip())) if result.stdout.strip() else 0
         except Exception:
             sz = 0
@@ -773,7 +870,6 @@ class ScanWorker(QThread):
         self.progress.emit(100, "Done")
         self.finished_scan.emit(T("rec_recycle", sz=format_size(sz)))
 
-    # ──────────── HIBERNATION ────────────
     def _scan_hibernation(self):
         self.progress.emit(50, "Checking hiberfil.sys...")
         hp = r"C:\hiberfil.sys"
@@ -788,7 +884,6 @@ class ScanWorker(QThread):
             self.finished_scan.emit(T("rec_hiber_off"))
         self.progress.emit(100, "Done")
 
-    # ──────────── BROWSER CLEANUP ────────────
     def _scan_browser(self):
         browsers = {
             "Chrome": [
@@ -815,8 +910,7 @@ class ScanWorker(QThread):
         items = []
         for browser, paths in browsers.items():
             for p in paths:
-                if self._cancel:
-                    break
+                if self._cancel: break
                 if os.path.isdir(p):
                     sz = get_folder_size(p)
                     if sz > 512 * 1024:
@@ -829,7 +923,6 @@ class ScanWorker(QThread):
         self.progress.emit(100, "Done")
         self.finished_scan.emit(T("rec_browser", sz=format_size(total_freed)))
 
-    # ──────────── QUICK AUDIT ────────────
     def _scan_audit(self):
         self.progress.emit(5, "[1/5] Junk...")
         quick_locs = [
@@ -841,8 +934,7 @@ class ScanWorker(QThread):
             (os.path.join(os.environ.get("LOCALAPPDATA",""), "D3DSCache"), "DirectX Cache"),
         ]
         for p, name in quick_locs:
-            if self._cancel:
-                break
+            if self._cancel: break
             if p and os.path.isdir(p):
                 sz = get_folder_size(p)
                 if sz > 1024 * 1024:
@@ -862,8 +954,7 @@ class ScanWorker(QThread):
                 ["powershell", "-NoProfile", "-Command",
                  "(New-Object -ComObject Shell.Application).NameSpace(0xA).Items() | "
                  "Measure-Object -Property Size -Sum | Select-Object -ExpandProperty Sum"],
-                capture_output=True, text=True, timeout=15
-            )
+                capture_output=True, text=True, timeout=15)
             rb_sz = int(float(result.stdout.strip())) if result.stdout.strip() else 0
             if rb_sz > 10 * 1024**2:
                 self._emit("Recycle Bin", rb_sz, "RECYCLE", "recyclebin")
@@ -879,8 +970,7 @@ class ScanWorker(QThread):
             try:
                 key = winreg.OpenKey(hkey, subpath)
                 for i in range(winreg.QueryInfoKey(key)[0]):
-                    if self._cancel:
-                        break
+                    if self._cancel: break
                     try:
                         name = winreg.EnumKey(key, i)
                         sub = winreg.OpenKey(key, name)
@@ -892,8 +982,7 @@ class ScanWorker(QThread):
                             exe_ok = False
                             if us:
                                 ep = us.strip('"').split('"')[0] if '"' in us else us.split()[0]
-                                if os.path.isfile(ep):
-                                    exe_ok = True
+                                if os.path.isfile(ep): exe_ok = True
                             if not exe_ok:
                                 est = int(es) * 1024 if es else 0
                                 self._emit(f"{dn} → {il}", est, "PHANTOM", "phantom", f"{subpath}\\{name}")
@@ -915,7 +1004,6 @@ class ScanWorker(QThread):
         self.progress.emit(100, "Audit complete")
         self.finished_scan.emit(T("rec_audit"))
 
-    # ──────────── CUSTOM SCAN ────────────
     def _scan_custom(self):
         path = self.extra
         if not path or not os.path.isdir(path):
@@ -924,8 +1012,7 @@ class ScanWorker(QThread):
         items = []
         try:
             for name in os.listdir(path):
-                if self._cancel:
-                    break
+                if self._cancel: break
                 fp = os.path.join(path, name)
                 if os.path.isdir(fp):
                     sz = get_folder_size(fp)
@@ -987,7 +1074,36 @@ class MonitorWorker(QThread):
 
 
 # ═══════════════════════════════════════════════════
-#  ANIMATED BACKGROUND WIDGET
+#  UPDATE CHECKER THREAD
+# ═══════════════════════════════════════════════════
+class UpdateCheckerThread(QThread):
+    status_signal = Signal(str)
+    update_found_signal = Signal(str, str)
+
+    def __init__(self, current_version):
+        super().__init__()
+        self.current_version = current_version
+
+    def run(self):
+        self.status_signal.emit("Checking GitHub repository for assets...")
+        try:
+            req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "s0meClean-Updater/2.0"})
+            with urllib.request.urlopen(req, timeout=7) as resp:
+                data = json.loads(resp.read().decode())
+            latest = data.get("tag_name", "v2.0.0").lstrip("v")
+            if latest > self.current_version:
+                assets = data.get("assets", [])
+                url = assets[0]["browser_download_url"] if assets else UPDATE_URL
+                self.status_signal.emit(f"New update found: v{latest}")
+                self.update_found_signal.emit(latest, url)
+            else:
+                self.status_signal.emit("Running the latest optimal build.")
+        except Exception as e:
+            self.status_signal.emit(f"Connection error: {e}")
+
+
+# ═══════════════════════════════════════════════════
+#  ANIMATED BACKGROUND WIDGET (Premium v2)
 # ═══════════════════════════════════════════════════
 class CyberBackground(QWidget):
     def __init__(self, parent=None):
@@ -997,7 +1113,6 @@ class CyberBackground(QWidget):
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(50)
-        import random
         self._particles = [
             {"x": random.random(), "y": random.random(),
              "vx": (random.random() - 0.5) * 0.002,
@@ -1015,77 +1130,59 @@ class CyberBackground(QWidget):
 
     def _tick(self):
         self._t += 1
-        import math, random
         for p in self._particles:
             p["x"] += p["vx"]
             p["y"] += p["vy"]
-            if p["x"] < 0 or p["x"] > 1:
-                p["vx"] *= -1
-            if p["y"] < 0 or p["y"] > 1:
-                p["vy"] *= -1
+            if p["x"] < 0 or p["x"] > 1: p["vx"] *= -1
+            if p["y"] < 0 or p["y"] > 1: p["vy"] *= -1
         for l in self._lines:
             l["x"] += l["speed"]
-            if l["x"] > 1.2:
-                l["x"] = -0.2
+            if l["x"] > 1.2: l["x"] = -0.2
         self.update()
 
     def paintEvent(self, event):
-        import math
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
 
+        # Grid
         grid_pen = QPen(QColor(C.CYAN))
         grid_pen.setWidthF(0.5)
         for gx in range(0, w, 60):
             alpha = 0.03 + 0.02 * math.sin(self._t * 0.02 + gx * 0.01)
-            c = QColor(C.CYAN)
-            c.setAlphaF(alpha)
-            grid_pen.setColor(c)
-            p.setPen(grid_pen)
+            c = QColor(C.CYAN); c.setAlphaF(alpha)
+            grid_pen.setColor(c); p.setPen(grid_pen)
             p.drawLine(gx, 0, gx, h)
         for gy in range(0, h, 60):
             alpha = 0.03 + 0.02 * math.sin(self._t * 0.02 + gy * 0.01)
-            c = QColor(C.CYAN)
-            c.setAlphaF(alpha)
-            grid_pen.setColor(c)
-            p.setPen(grid_pen)
+            c = QColor(C.CYAN); c.setAlphaF(alpha)
+            grid_pen.setColor(c); p.setPen(grid_pen)
             p.drawLine(0, gy, w, gy)
 
+        # Neon rain lines
         for l in self._lines:
             x = int(l["x"] * w)
             y2 = int(l["len"] * h)
             grad = QLinearGradient(x, 0, x, y2)
-            c = QColor(C.PINK)
-            c.setAlphaF(0)
-            grad.setColorAt(0, c)
-            c2 = QColor(C.PINK)
-            c2.setAlphaF(l["alpha"])
-            grad.setColorAt(0.5, c2)
-            c3 = QColor(C.PINK)
-            c3.setAlphaF(0)
-            grad.setColorAt(1, c3)
-            pen = QPen(QBrush(grad), 1.5)
-            p.setPen(pen)
-            p.drawLine(x, 0, x, y2)
+            c0 = QColor(C.PINK); c0.setAlphaF(0); grad.setColorAt(0, c0)
+            c1 = QColor(C.PINK); c1.setAlphaF(l["alpha"]); grad.setColorAt(0.5, c1)
+            c2 = QColor(C.PINK); c2.setAlphaF(0); grad.setColorAt(1, c2)
+            p.setPen(QPen(QBrush(grad), 1.5)); p.drawLine(x, 0, x, y2)
 
+        # Particles
         p.setPen(Qt.NoPen)
         for pt in self._particles:
-            x = int(pt["x"] * w)
-            y = int(pt["y"] * h)
+            x, y = int(pt["x"] * w), int(pt["y"] * h)
             c = QColor(pt["c"])
             c.setAlphaF(0.4 + 0.3 * math.sin(self._t * 0.05 + x))
-            p.setBrush(c)
-            p.drawEllipse(QPoint(x, y), int(pt["r"]), int(pt["r"]))
-            gc = QColor(pt["c"])
-            gc.setAlphaF(0.08)
-            p.setBrush(gc)
-            p.drawEllipse(QPoint(x, y), int(pt["r"] * 4), int(pt["r"] * 4))
+            p.setBrush(c); p.drawEllipse(QPoint(x, y), int(pt["r"]), int(pt["r"]))
+            gc = QColor(pt["c"]); gc.setAlphaF(0.08)
+            p.setBrush(gc); p.drawEllipse(QPoint(x, y), int(pt["r"] * 4), int(pt["r"] * 4))
         p.end()
 
 
 # ═══════════════════════════════════════════════════
-#  NEON PROGRESS BAR
+#  NEON PROGRESS BAR (Premium v2 — shimmer + glow)
 # ═══════════════════════════════════════════════════
 class NeonProgressBar(QWidget):
     def __init__(self, parent=None):
@@ -1095,11 +1192,11 @@ class NeonProgressBar(QWidget):
         self._anim_offset = 0
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._pulse)
-        self._timer.start(40)
+        self._timer.start(30)
 
     def _pulse(self):
         if 0 < self._value < 100:
-            self._anim_offset = (self._anim_offset + 2) % 40
+            self._anim_offset = (self._anim_offset + 3) % 200
             self.update()
 
     def setValue(self, v):
@@ -1107,31 +1204,37 @@ class NeonProgressBar(QWidget):
         self.update()
 
     def paintEvent(self, event):
-        import math
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
-        p.setBrush(QColor(C.PANEL2))
-        p.setPen(Qt.NoPen)
+        # Track
+        p.setBrush(QColor(C.PANEL2)); p.setPen(Qt.NoPen)
         p.drawRoundedRect(0, 0, w, h, 4, 4)
         fw = int(w * self._value / 100)
         if fw > 0:
+            # Main gradient fill
             grad = QLinearGradient(0, 0, fw, 0)
             grad.setColorAt(0, QColor(C.CYAN))
             grad.setColorAt(0.5, QColor(C.PURPLE))
             grad.setColorAt(1, QColor(C.PINK))
-            p.setBrush(grad)
-            p.drawRoundedRect(0, 0, fw, h, 4, 4)
+            p.setBrush(grad); p.drawRoundedRect(0, 0, fw, h, 4, 4)
+            # Shimmer effect
             if self._value < 100:
+                shimmer_x = (self._anim_offset / 200.0) * fw
+                sg = QLinearGradient(shimmer_x - 30, 0, shimmer_x + 30, 0)
+                sc0 = QColor("#ffffff"); sc0.setAlphaF(0); sg.setColorAt(0, sc0)
+                sc1 = QColor("#ffffff"); sc1.setAlphaF(0.25); sg.setColorAt(0.5, sc1)
+                sc2 = QColor("#ffffff"); sc2.setAlphaF(0); sg.setColorAt(1, sc2)
+                p.setBrush(sg); p.drawRoundedRect(0, 0, fw, h, 4, 4)
+                # Glow at tip
                 gc = QColor(C.CYAN)
-                gc.setAlphaF(0.15 + 0.1 * math.sin(self._anim_offset * 0.15))
-                p.setBrush(gc)
-                p.drawRoundedRect(max(0, fw - 30), 0, 30, h, 4, 4)
+                gc.setAlphaF(0.15 + 0.1 * math.sin(self._anim_offset * 0.1))
+                p.setBrush(gc); p.drawRoundedRect(max(0, fw - 40), 0, 40, h, 4, 4)
         p.end()
 
 
 # ═══════════════════════════════════════════════════
-#  SIDEBAR BUTTON
+#  SIDEBAR BUTTON (Premium v2 — neon accent bar + glow)
 # ═══════════════════════════════════════════════════
 class SidebarButton(QPushButton):
     def __init__(self, text, icon_text="", accent=C.CYAN, parent=None):
@@ -1141,7 +1244,7 @@ class SidebarButton(QPushButton):
         self._accent = accent
         self._active = False
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedHeight(40)
+        self.setFixedHeight(44)
         self.setStyleSheet("background: transparent; border: none;")
 
     def set_active(self, active):
@@ -1154,51 +1257,49 @@ class SidebarButton(QPushButton):
         w, h = self.width(), self.height()
 
         if self._active:
+            # Active gradient background
             grad = QLinearGradient(0, 0, w, 0)
-            ac = QColor(self._accent)
-            ac.setAlphaF(0.18)
-            grad.setColorAt(0, ac)
-            ac2 = QColor(self._accent)
-            ac2.setAlphaF(0.03)
-            grad.setColorAt(1, ac2)
-            p.setBrush(grad)
-            p.setPen(Qt.NoPen)
+            ac = QColor(self._accent); ac.setAlphaF(0.18); grad.setColorAt(0, ac)
+            ac2 = QColor(self._accent); ac2.setAlphaF(0.02); grad.setColorAt(1, ac2)
+            p.setBrush(grad); p.setPen(Qt.NoPen)
             p.drawRoundedRect(4, 2, w - 8, h - 4, 8, 8)
+            # Left neon bar
             bar_grad = QLinearGradient(0, 6, 0, h - 6)
             bar_grad.setColorAt(0, QColor(self._accent))
-            bc = QColor(self._accent)
-            bc.setAlphaF(0.3)
-            bar_grad.setColorAt(1, bc)
+            bc = QColor(self._accent); bc.setAlphaF(0.3); bar_grad.setColorAt(1, bc)
             p.setBrush(bar_grad)
             p.drawRoundedRect(0, 6, 3, h - 12, 2, 2)
+            # Glow effect on left bar
+            glow = QColor(self._accent); glow.setAlphaF(0.08)
+            p.setBrush(glow); p.drawRoundedRect(0, 3, 20, h - 6, 8, 8)
         elif self.underMouse():
-            hc = QColor(C.PANEL3)
-            hc.setAlphaF(0.7)
-            p.setBrush(hc)
-            p.setPen(Qt.NoPen)
+            hc = QColor(C.PANEL3); hc.setAlphaF(0.7)
+            p.setBrush(hc); p.setPen(Qt.NoPen)
             p.drawRoundedRect(4, 2, w - 8, h - 4, 8, 8)
 
-        p.setFont(QFont("Segoe UI", 12))
+        # Icon
+        p.setFont(QFont("Segoe UI", 13))
         p.setPen(QColor(self._accent if self._active else C.MUTED))
-        p.drawText(QRect(12, 0, 28, h), Qt.AlignCenter, self._icon_text)
+        p.drawText(QRect(14, 0, 28, h), Qt.AlignCenter, self._icon_text)
 
+        # Text
         f = QFont("Segoe UI", 9)
         f.setBold(self._active)
-        f.setLetterSpacing(QFont.AbsoluteSpacing, 0.5 if self._active else 0)
+        if self._active:
+            f.setLetterSpacing(QFont.AbsoluteSpacing, 1.0)
         p.setFont(f)
         p.setPen(QColor(C.TEXT if self._active else C.DIM))
-        p.drawText(QRect(42, 0, w - 52, h), Qt.AlignVCenter | Qt.AlignLeft, self._text)
+        p.drawText(QRect(46, 0, w - 56, h), Qt.AlignVCenter | Qt.AlignLeft, self._text)
         p.end()
 
     def enterEvent(self, event):
         self.update()
-
     def leaveEvent(self, event):
         self.update()
 
 
 # ═══════════════════════════════════════════════════
-#  STAT CARD
+#  STAT CARD (Premium v2 — top accent border + glow text)
 # ═══════════════════════════════════════════════════
 class StatCard(QFrame):
     def __init__(self, label, value, accent=C.CYAN, parent=None):
@@ -1229,13 +1330,12 @@ class StatCard(QFrame):
 
     def set_value(self, v):
         self._val.setText(v)
-
     def set_color(self, c):
         self._val.setStyleSheet(f"color: {c}; border: none;")
 
 
 # ═══════════════════════════════════════════════════
-#  TOGGLE SWITCH
+#  TOGGLE SWITCH (Premium v2 — smooth gradient)
 # ═══════════════════════════════════════════════════
 class ToggleSwitch(QWidget):
     toggled = Signal(bool)
@@ -1244,47 +1344,59 @@ class ToggleSwitch(QWidget):
         super().__init__(parent)
         self.setFixedSize(50, 26)
         self._checked = checked
-        self._offset = 24 if checked else 2
+        self._offset = 24.0 if checked else 2.0
         self.setCursor(Qt.PointingHandCursor)
+        self._anim = QPropertyAnimation(self, b"knob_x")
+        self._anim.setDuration(150)
+        self._anim.setEasingCurve(QEasingCurve.InOutCubic)
+
+    def _get_knob_x(self):
+        return self._offset
+    def _set_knob_x(self, val):
+        self._offset = val
+        self.update()
+    knob_x = Property(float, _get_knob_x, _set_knob_x)
 
     def isChecked(self):
         return self._checked
-
     def setChecked(self, val):
         self._checked = val
-        self._offset = 24 if val else 2
+        self._offset = 24.0 if val else 2.0
         self.update()
 
     def mousePressEvent(self, event):
         self._checked = not self._checked
-        self._offset = 24 if self._checked else 2
-        self.update()
+        self._anim.setStartValue(self._offset)
+        self._anim.setEndValue(24.0 if self._checked else 2.0)
+        self._anim.start()
         self.toggled.emit(self._checked)
 
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-
-        # Track
         if self._checked:
             grad = QLinearGradient(0, 0, 50, 0)
             grad.setColorAt(0, QColor(C.CYAN))
             grad.setColorAt(1, QColor(C.PURPLE))
             p.setBrush(grad)
+            p.setPen(QPen(QColor(C.CYAN_D), 1))
         else:
             p.setBrush(QColor(C.PANEL3))
-        p.setPen(QPen(QColor(C.BORDER), 1))
+            p.setPen(QPen(QColor(C.BORDER), 1))
         p.drawRoundedRect(0, 0, 50, 26, 13, 13)
-
-        # Knob
+        # Knob with shadow
         p.setPen(Qt.NoPen)
+        if self._checked:
+            shadow = QColor(C.CYAN); shadow.setAlphaF(0.3)
+            p.setBrush(shadow)
+            p.drawEllipse(int(self._offset) - 1, 2, 22, 22)
         p.setBrush(QColor("#ffffff" if self._checked else C.DIM))
-        p.drawEllipse(self._offset, 3, 20, 20)
+        p.drawEllipse(int(self._offset), 3, 20, 20)
         p.end()
 
 
 # ═══════════════════════════════════════════════════
-#  MINI GRAPH WIDGET (for Monitor)
+#  MINI GRAPH WIDGET (Premium v2 — gradient fill + glow dot)
 # ═══════════════════════════════════════════════════
 class MiniGraph(QWidget):
     def __init__(self, label="", color=C.CYAN, max_val=100, parent=None):
@@ -1307,15 +1419,21 @@ class MiniGraph(QWidget):
         self._current_text = t
 
     def paintEvent(self, event):
-        import math
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
 
-        # Background
+        # Background with subtle inner shadow
         p.setBrush(QColor(C.PANEL))
         p.setPen(QPen(QColor(C.BORDER), 1))
         p.drawRoundedRect(0, 0, w, h, 10, 10)
+
+        # Top inner highlight
+        hl = QLinearGradient(0, 0, 0, 6)
+        hc0 = QColor(self._color); hc0.setAlphaF(0.08); hl.setColorAt(0, hc0)
+        hc1 = QColor(self._color); hc1.setAlphaF(0); hl.setColorAt(1, hc1)
+        p.setPen(Qt.NoPen); p.setBrush(hl)
+        p.drawRoundedRect(1, 1, w - 2, 6, 10, 10)
 
         # Label
         p.setFont(QFont("Consolas", 8, QFont.Bold))
@@ -1326,100 +1444,82 @@ class MiniGraph(QWidget):
         p.setFont(QFont("Consolas", 14, QFont.Black))
         p.drawText(QRect(10, 5, w - 20, 20), Qt.AlignRight, self._current_text)
 
-        # Graph area
-        margin_top = 30
-        margin_bottom = 10
-        margin_lr = 10
+        margin_top, margin_bottom, margin_lr = 30, 10, 10
         gw = w - margin_lr * 2
         gh = h - margin_top - margin_bottom
-
         if gh < 10 or gw < 10:
-            p.end()
-            return
+            p.end(); return
 
         # Grid lines
-        grid_pen = QPen(QColor(C.BORDER))
-        grid_pen.setWidthF(0.5)
+        grid_pen = QPen(QColor(C.BORDER)); grid_pen.setWidthF(0.5)
         p.setPen(grid_pen)
         for i in range(4):
             y = margin_top + int(gh * i / 3)
             p.drawLine(margin_lr, y, w - margin_lr, y)
 
-        # Data line
+        # Data line + fill
         if len(self._data) >= 2:
             path = QPainterPath()
             n = len(self._data)
             for i, v in enumerate(self._data):
                 x = margin_lr + (i / (n - 1)) * gw
                 y = margin_top + gh - (min(v, self._max_val) / max(self._max_val, 1)) * gh
-                if i == 0:
-                    path.moveTo(x, y)
-                else:
-                    path.lineTo(x, y)
+                if i == 0: path.moveTo(x, y)
+                else: path.lineTo(x, y)
 
-            # Fill under curve
+            # Fill
             fill_path = QPainterPath(path)
             fill_path.lineTo(margin_lr + gw, margin_top + gh)
             fill_path.lineTo(margin_lr, margin_top + gh)
             fill_path.closeSubpath()
             fill_grad = QLinearGradient(0, margin_top, 0, margin_top + gh)
-            fc = QColor(self._color)
-            fc.setAlphaF(0.15)
-            fill_grad.setColorAt(0, fc)
-            fc2 = QColor(self._color)
-            fc2.setAlphaF(0.02)
-            fill_grad.setColorAt(1, fc2)
-            p.setPen(Qt.NoPen)
-            p.setBrush(fill_grad)
-            p.drawPath(fill_path)
+            fc = QColor(self._color); fc.setAlphaF(0.18); fill_grad.setColorAt(0, fc)
+            fc2 = QColor(self._color); fc2.setAlphaF(0.01); fill_grad.setColorAt(1, fc2)
+            p.setPen(Qt.NoPen); p.setBrush(fill_grad); p.drawPath(fill_path)
 
-            # Line
-            line_pen = QPen(QColor(self._color), 2)
-            p.setPen(line_pen)
-            p.setBrush(Qt.NoBrush)
-            p.drawPath(path)
+            # Line with glow
+            glow_pen = QPen(QColor(self._color), 4)
+            glow_c = QColor(self._color); glow_c.setAlphaF(0.15)
+            glow_pen.setColor(glow_c)
+            p.setPen(glow_pen); p.setBrush(Qt.NoBrush); p.drawPath(path)
+            p.setPen(QPen(QColor(self._color), 2)); p.drawPath(path)
 
             # Dot at current value
             if self._data:
                 last_x = margin_lr + gw
                 last_y = margin_top + gh - (min(self._data[-1], self._max_val) / max(self._max_val, 1)) * gh
                 p.setPen(Qt.NoPen)
-                gc = QColor(self._color)
-                gc.setAlphaF(0.3)
-                p.setBrush(gc)
-                p.drawEllipse(QPoint(int(last_x), int(last_y)), 6, 6)
+                # Outer glow
+                gc = QColor(self._color); gc.setAlphaF(0.15)
+                p.setBrush(gc); p.drawEllipse(QPoint(int(last_x), int(last_y)), 10, 10)
+                gc2 = QColor(self._color); gc2.setAlphaF(0.3)
+                p.setBrush(gc2); p.drawEllipse(QPoint(int(last_x), int(last_y)), 6, 6)
                 p.setBrush(QColor(self._color))
                 p.drawEllipse(QPoint(int(last_x), int(last_y)), 3, 3)
-
         p.end()
 
 
 # ═══════════════════════════════════════════════════
-#  PERFORMANCE OVERLAY WINDOW
+#  PERFORMANCE OVERLAY WINDOW (Premium v2)
 # ═══════════════════════════════════════════════════
 class OverlayWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
-        )
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(220, 140)
+        self.setFixedSize(230, 150)
         self._dragging = False
         self._offset = QPoint()
         self._stats = {"cpu": 0, "ram": 0, "gpu": "N/A", "net": "0 KB/s"}
-        self._opacity = 0.85
-
-        # Position top-right
+        self._opacity = 0.88
         screen = QApplication.primaryScreen()
         if screen:
             geo = screen.availableGeometry()
-            self.move(geo.width() - 240, 20)
+            self.move(geo.width() - 250, 20)
 
     def set_stats(self, stats):
         self._stats = stats
         self.update()
-
     def set_opacity(self, val):
         self._opacity = val
         self.update()
@@ -1429,20 +1529,27 @@ class OverlayWindow(QWidget):
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
 
-        # Background
-        bg = QColor(C.BG)
-        bg.setAlphaF(self._opacity)
+        # Background with neon border
+        bg = QColor(C.BG); bg.setAlphaF(self._opacity)
         p.setBrush(bg)
-        p.setPen(QPen(QColor(C.CYAN), 1))
+        # Gradient border
+        border_grad = QLinearGradient(0, 0, w, h)
+        border_grad.setColorAt(0, QColor(C.CYAN))
+        border_grad.setColorAt(1, QColor(C.PURPLE))
+        p.setPen(QPen(QBrush(border_grad), 1.5))
         p.drawRoundedRect(1, 1, w - 2, h - 2, 12, 12)
 
-        # Header
+        # Header line
         p.setFont(QFont("Consolas", 8, QFont.Bold))
         p.setPen(QColor(C.CYAN))
         p.drawText(QRect(12, 8, w - 24, 16), Qt.AlignLeft, "s0meClean? OVERLAY")
 
+        # Separator
+        sep_pen = QPen(QColor(C.BORDER)); sep_pen.setWidthF(0.5)
+        p.setPen(sep_pen); p.drawLine(12, 26, w - 12, 26)
+
         # Stats
-        y = 30
+        y = 32
         stats_list = [
             ("CPU", f"{self._stats.get('cpu', 0):.0f}%", C.CYAN),
             ("RAM", f"{self._stats.get('ram', 0):.0f}%", C.PURPLE),
@@ -1452,44 +1559,139 @@ class OverlayWindow(QWidget):
         for label, value, color in stats_list:
             p.setFont(QFont("Consolas", 9))
             p.setPen(QColor(C.MUTED))
-            p.drawText(QRect(12, y, 50, 20), Qt.AlignLeft | Qt.AlignVCenter, label)
-
+            p.drawText(QRect(12, y, 50, 22), Qt.AlignLeft | Qt.AlignVCenter, label)
             p.setFont(QFont("Consolas", 11, QFont.Bold))
             p.setPen(QColor(color))
-            p.drawText(QRect(55, y, w - 70, 20), Qt.AlignLeft | Qt.AlignVCenter, value)
-
+            p.drawText(QRect(55, y, w - 70, 22), Qt.AlignLeft | Qt.AlignVCenter, value)
             # Mini bar
             try:
                 val = float(value.replace('%', '').replace(' ', '').split('/')[0])
                 bar_w = int((w - 80) * min(val, 100) / 100)
                 if bar_w > 0:
-                    bar_c = QColor(color)
-                    bar_c.setAlphaF(0.2)
-                    p.setPen(Qt.NoPen)
-                    p.setBrush(bar_c)
-                    p.drawRoundedRect(55, y + 18, bar_w, 3, 1, 1)
+                    bar_c = QColor(color); bar_c.setAlphaF(0.2)
+                    p.setPen(Qt.NoPen); p.setBrush(bar_c)
+                    p.drawRoundedRect(55, y + 20, bar_w, 3, 1, 1)
             except (ValueError, IndexError):
                 pass
-
-            y += 25
-
+            y += 28
         p.end()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._dragging = True
             self._offset = event.globalPosition().toPoint() - self.pos()
-
     def mouseMoveEvent(self, event):
         if self._dragging:
             self.move(event.globalPosition().toPoint() - self._offset)
-
     def mouseReleaseEvent(self, event):
         self._dragging = False
 
 
 # ═══════════════════════════════════════════════════
-#  MAIN WINDOW
+#  HELPER: Create a styled cyber button
+# ═══════════════════════════════════════════════════
+def _make_btn(text, color, bg=None, size=9, bold=True, icon=""):
+    """Create a premium styled QPushButton."""
+    btn = QPushButton(f"  {icon}  {text}" if icon else text)
+    btn.setCursor(Qt.PointingHandCursor)
+    btn.setFont(QFont("Consolas", size, QFont.Bold if bold else QFont.Normal))
+    _bg = bg or C.PANEL2
+    btn.setStyleSheet(f"""
+        QPushButton {{
+            background: {_bg}; color: {color}; border: 1px solid {C.BORDER};
+            border-radius: 8px; padding: 10px 16px;
+        }}
+        QPushButton:hover {{
+            background: {color}; color: {C.BG}; border-color: {color};
+        }}
+        QPushButton:pressed {{
+            background: {C.BG2};
+        }}
+    """)
+    return btn
+
+def _make_accent_btn(text, color, size=10, icon=""):
+    """Accent button with solid color bg."""
+    btn = QPushButton(f"  {icon}  {text}" if icon else text)
+    btn.setCursor(Qt.PointingHandCursor)
+    btn.setFont(QFont("Consolas", size, QFont.Bold))
+    darker = QColor(color).darker(130).name()
+    btn.setStyleSheet(f"""
+        QPushButton {{
+            background: {color}; color: {C.BG}; border: none;
+            border-radius: 10px; padding: 12px 24px;
+        }}
+        QPushButton:hover {{
+            background: {darker};
+        }}
+    """)
+    return btn
+
+def _make_gradient_btn(text, c1, c2, size=11, height=44, icon=""):
+    """Gradient button (e.g., Game Boost enable)."""
+    btn = QPushButton(f"  {icon}  {text}" if icon else text)
+    btn.setCursor(Qt.PointingHandCursor)
+    btn.setFont(QFont("Consolas", size, QFont.Bold))
+    btn.setFixedHeight(height)
+    btn.setStyleSheet(f"""
+        QPushButton {{
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 {c1}, stop:1 {c2});
+            color: {C.BG}; border: none; border-radius: 10px; padding: 10px 30px;
+        }}
+        QPushButton:hover {{ background: {c1}; }}
+    """)
+    return btn
+
+def _tree_qss(accent=C.CYAN):
+    """Premium QSS for QTreeWidget."""
+    return f"""
+        QTreeWidget {{
+            background: {C.PANEL}; color: {C.TEXT};
+            border: 1px solid {C.BORDER}; border-radius: 10px;
+            font-family: 'Consolas'; font-size: 10pt;
+            alternate-background-color: {C.PANEL2};
+            outline: none; gridline-color: {C.PANEL2};
+        }}
+        QTreeWidget::item {{
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(42, 54, 96, 0.3);
+        }}
+        QTreeWidget::item:selected {{
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 rgba({QColor(accent).red()},{QColor(accent).green()},{QColor(accent).blue()},0.15),
+                stop:1 rgba({QColor(accent).red()},{QColor(accent).green()},{QColor(accent).blue()},0.03));
+            border-left: 3px solid {accent};
+        }}
+        QTreeWidget::item:hover {{
+            background: rgba({QColor(accent).red()},{QColor(accent).green()},{QColor(accent).blue()},0.05);
+        }}
+        QHeaderView::section {{
+            background: {C.PANEL2}; color: {accent}; border: none;
+            font-family: 'Consolas'; font-weight: bold; font-size: 9pt;
+            padding: 8px 8px; border-bottom: 2px solid {accent};
+        }}
+        QScrollBar:vertical {{ background: {C.PANEL}; width: 6px; border: none; }}
+        QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 3px; min-height: 30px; }}
+        QScrollBar::handle:vertical:hover {{ background: {accent}; }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+    """
+
+def _card_frame(accent=C.BORDER, left_accent=None):
+    """Create a styled QFrame card."""
+    f = QFrame()
+    la = f"border-left: 4px solid {left_accent};" if left_accent else ""
+    f.setStyleSheet(f"""
+        QFrame {{
+            background: {C.PANEL}; border: 1px solid {accent};
+            border-radius: 12px; {la}
+        }}
+    """)
+    return f
+
+
+# ═══════════════════════════════════════════════════
+#  MAIN WINDOW (Premium v2 — 9 pages)
 # ═══════════════════════════════════════════════════
 class MainWindow(QMainWindow):
     _update_result = Signal(str)
@@ -1507,7 +1709,6 @@ class MainWindow(QMainWindow):
         self._prev_disk_io = None
         self._prev_net_io = None
 
-        # Central widget
         central = QWidget()
         self.setCentralWidget(central)
         central.setStyleSheet(f"background-color: {C.BG}; color: {C.TEXT};")
@@ -1534,7 +1735,6 @@ class MainWindow(QMainWindow):
         self._switch_tab("clean")
         self._update_disk_info()
 
-        # Start monitor if psutil available
         if HAS_PSUTIL:
             self._start_monitor()
 
@@ -1546,7 +1746,9 @@ class MainWindow(QMainWindow):
             self._overlay.close()
         super().closeEvent(event)
 
-    # ── HEADER ──
+    # ══════════════════════════════════════════════
+    #  HEADER
+    # ══════════════════════════════════════════════
     def _build_header(self, parent_layout):
         header = QFrame()
         header.setFixedHeight(80)
@@ -1565,7 +1767,7 @@ class MainWindow(QMainWindow):
         logo_layout = QVBoxLayout()
         logo_layout.setSpacing(1)
         title = QLabel("s0meClean?")
-        title.setFont(QFont("Consolas", 20, QFont.Black))
+        title.setFont(QFont("Consolas", 22, QFont.Black))
         title.setStyleSheet(f"color: {C.CYAN}; background: transparent;")
         subtitle = QLabel(T("subtitle"))
         subtitle.setFont(QFont("Segoe UI", 8, QFont.Bold))
@@ -1596,8 +1798,7 @@ class MainWindow(QMainWindow):
             if os.path.isdir(drive + "\\"):
                 self._drive_combo.addItem(drive)
         idx = self._drive_combo.findText("C:")
-        if idx >= 0:
-            self._drive_combo.setCurrentIndex(idx)
+        if idx >= 0: self._drive_combo.setCurrentIndex(idx)
         self._drive_combo.currentTextChanged.connect(self._on_drive_changed)
         drive_layout.addWidget(dl)
         drive_layout.addWidget(self._drive_combo)
@@ -1605,8 +1806,8 @@ class MainWindow(QMainWindow):
         hl.addSpacing(20)
 
         # Stats
-        self._stat_total = StatCard(T("total"), "—", C.TEXT)
-        self._stat_used = StatCard(T("used"), "—", C.TEXT)
+        self._stat_total = StatCard(T("total"), "—", C.DIM)
+        self._stat_used = StatCard(T("used"), "—", C.ORANGE)
         self._stat_free = StatCard(T("free"), "—", C.GREEN)
         hl.addWidget(self._stat_total)
         hl.addWidget(self._stat_used)
@@ -1614,47 +1815,55 @@ class MainWindow(QMainWindow):
         hl.addStretch()
 
         # Admin badge
-        admin_badge = QLabel(T("admin_yes") if is_admin() else T("admin_no"))
+        is_adm = is_admin()
+        admin_badge = QLabel(f"{'●' if is_adm else '○'}  {T('admin_yes') if is_adm else T('admin_no')}")
         admin_badge.setFont(QFont("Consolas", 9, QFont.Bold))
-        admin_badge.setStyleSheet(f"color: {C.GREEN if is_admin() else C.RED}; background: transparent;")
+        admin_badge.setStyleSheet(f"""
+            color: {C.GREEN if is_adm else C.RED};
+            background: rgba({50 if is_adm else 255},{230 if is_adm else 70},{130 if is_adm else 100},0.08);
+            border: 1px solid rgba({50 if is_adm else 255},{230 if is_adm else 70},{130 if is_adm else 100},0.3);
+            border-radius: 12px; padding: 4px 12px;
+        """)
         hl.addWidget(admin_badge)
         hl.addSpacing(8)
 
         ver_badge = QLabel(f"v{VERSION}")
-        ver_badge.setFont(QFont("Consolas", 9))
+        ver_badge.setFont(QFont("Consolas", 9, QFont.Bold))
         ver_badge.setStyleSheet(f"""
-            color: {C.CYAN}; background: {C.PANEL2}; border: 1px solid {C.CYAN_D};
-            border-radius: 10px; padding: 2px 10px;
+            color: {C.CYAN}; background: rgba(0,240,255,0.06);
+            border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 12px; padding: 4px 14px;
         """)
         hl.addWidget(ver_badge)
-
         parent_layout.addWidget(header)
 
-    # ── SIDEBAR ──
+    # ══════════════════════════════════════════════
+    #  SIDEBAR (Premium v2 — dark sidebar with section dividers)
+    # ══════════════════════════════════════════════
     def _build_sidebar(self, parent_layout):
         sidebar = QFrame()
         sidebar.setFixedWidth(220)
         sidebar.setStyleSheet(f"""
             QFrame {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {C.PANEL}, stop:1 {C.BG2});
+                background: {C.SIDEBAR};
                 border-right: 1px solid {C.BORDER};
             }}
         """)
         sl = QVBoxLayout(sidebar)
-        sl.setContentsMargins(6, 10, 6, 10)
-        sl.setSpacing(2)
+        sl.setContentsMargins(6, 12, 6, 10)
+        sl.setSpacing(3)
 
         self._sidebar_btns = {}
         tabs = [
-            ("clean",    T("tab_clean"),    "🧹", C.CYAN),
-            ("boost",    T("tab_boost"),    "🚀", C.GREEN),
-            ("monitor",  T("tab_monitor"),  "📊", C.PURPLE),
-            ("security", T("tab_security"), "🛡", C.ORANGE),
-            ("drivers",  T("tab_drivers"),  "🔄", C.CYAN_D),
-            ("tweaks",   T("tab_tweaks"),   "⚡", C.YELLOW),
-            ("plugins",  T("tab_plugins"),  "🧩", C.PINK),
-            ("settings", T("tab_settings"), "⚙", C.DIM),
+            ("clean",    T("tab_clean"),    "\U0001f9f9", C.CYAN),
+            ("boost",    T("tab_boost"),    "\U0001f680", C.GREEN),
+            ("monitor",  T("tab_monitor"),  "\U0001f4ca", C.PURPLE),
+            ("security", T("tab_security"), "\U0001f6e1", C.ORANGE),
+            ("drivers",  T("tab_drivers"),  "\U0001f504", C.CYAN_D),
+            ("tweaks",   T("tab_tweaks"),   "⚡",     C.YELLOW),
+            ("plugins",  T("tab_plugins"),  "\U0001f9e9", C.PINK),
+            ("terminal", T("tab_terminal"), "⌨",     C.GREEN),
+            ("settings", T("tab_settings"), "⚙",     C.DIM),
         ]
         for key, text, icon, color in tabs:
             btn = SidebarButton(text, icon, color)
@@ -1663,74 +1872,48 @@ class MainWindow(QMainWindow):
             self._sidebar_btns[key] = btn
 
         sl.addSpacing(8)
-        sep = QFrame()
-        sep.setFixedHeight(1)
+        sep = QFrame(); sep.setFixedHeight(1)
         sep.setStyleSheet(f"background: {C.BORDER};")
         sl.addWidget(sep)
         sl.addSpacing(4)
 
-        # Scan actions label
         self._actions_label = QLabel(T("scan_actions"))
         self._actions_label.setFont(QFont("Consolas", 7, QFont.Bold))
         self._actions_label.setStyleSheet(f"color: {C.PINK}; background: transparent;")
         sl.addWidget(self._actions_label)
         sl.addSpacing(2)
 
-        # Action buttons container (scrollable)
         action_scroll = QScrollArea()
         action_scroll.setWidgetResizable(True)
-        action_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }"
-                                    "QScrollBar:vertical { width: 4px; background: transparent; }"
-                                    f"QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 2px; }}"
-                                    "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }")
+        action_scroll.setStyleSheet(f"""
+            QScrollArea {{ background: transparent; border: none; }}
+            QScrollBar:vertical {{ width: 4px; background: transparent; }}
+            QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 2px; }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+        """)
         action_widget = QWidget()
         action_widget.setStyleSheet("background: transparent;")
         self._action_container = QVBoxLayout(action_widget)
-        self._action_container.setSpacing(2)
+        self._action_container.setSpacing(3)
         self._action_container.setContentsMargins(0, 0, 0, 0)
         action_scroll.setWidget(action_widget)
         sl.addWidget(action_scroll, 1)
 
         sl.addSpacing(4)
 
-        # GitHub button
-        gh_btn = QPushButton(T("github_btn"))
-        gh_btn.setCursor(Qt.PointingHandCursor)
-        gh_btn.setFont(QFont("Segoe UI", 8, QFont.Bold))
-        gh_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {C.PANEL2}; color: {C.DIM}; border: 1px solid {C.BORDER};
-                border-radius: 8px; padding: 8px;
-            }}
-            QPushButton:hover {{
-                color: {C.CYAN}; border-color: {C.CYAN};
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(0,240,255,0.08), stop:1 {C.PANEL2});
-            }}
-        """)
+        gh_btn = _make_btn(T("github_btn"), C.CYAN, icon="★")
         gh_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(f"https://github.com/{GITHUB_REPO}")))
         sl.addWidget(gh_btn)
 
-        upd_btn = QPushButton(T("check_updates"))
-        upd_btn.setCursor(Qt.PointingHandCursor)
-        upd_btn.setFont(QFont("Segoe UI", 8, QFont.Bold))
-        upd_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {C.PANEL2}; color: {C.DIM}; border: 1px solid {C.BORDER};
-                border-radius: 8px; padding: 8px;
-            }}
-            QPushButton:hover {{
-                color: {C.GREEN}; border-color: {C.GREEN};
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(50,230,130,0.08), stop:1 {C.PANEL2});
-            }}
-        """)
+        upd_btn = _make_btn(T("check_updates"), C.GREEN, icon="↻")
         upd_btn.clicked.connect(self._check_update)
         sl.addWidget(upd_btn)
 
         parent_layout.addWidget(sidebar)
 
-    # ── CONTENT AREA ──
+    # ══════════════════════════════════════════════
+    #  CONTENT AREA (9 pages)
+    # ══════════════════════════════════════════════
     def _build_content(self, parent_layout):
         self._stack = QStackedWidget()
         self._stack.setStyleSheet(f"background: {C.BG};")
@@ -1742,16 +1925,13 @@ class MainWindow(QMainWindow):
         self._page_drivers = self._build_drivers_page()
         self._page_tweaks = self._build_tweaks_page()
         self._page_plugins = self._build_plugins_page()
+        self._page_terminal = self._build_terminal_page()
         self._page_settings = self._build_settings_page()
 
-        self._stack.addWidget(self._page_clean)      # 0
-        self._stack.addWidget(self._page_boost)       # 1
-        self._stack.addWidget(self._page_monitor)     # 2
-        self._stack.addWidget(self._page_security)    # 3
-        self._stack.addWidget(self._page_drivers)     # 4
-        self._stack.addWidget(self._page_tweaks)      # 5
-        self._stack.addWidget(self._page_plugins)     # 6
-        self._stack.addWidget(self._page_settings)    # 7
+        for page in [self._page_clean, self._page_boost, self._page_monitor,
+                     self._page_security, self._page_drivers, self._page_tweaks,
+                     self._page_plugins, self._page_terminal, self._page_settings]:
+            self._stack.addWidget(page)
 
         parent_layout.addWidget(self._stack, 1)
 
@@ -1813,31 +1993,7 @@ class MainWindow(QMainWindow):
         self._tree.setSelectionMode(QTreeWidget.ExtendedSelection)
         self._tree.setRootIsDecorated(False)
         self._tree.setSortingEnabled(True)
-        self._tree.setStyleSheet(f"""
-            QTreeWidget {{
-                background: {C.PANEL}; color: {C.TEXT};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                font-family: 'Consolas'; font-size: 10pt;
-                alternate-background-color: {C.PANEL2};
-                outline: none;
-            }}
-            QTreeWidget::item {{ padding: 5px 4px; border-bottom: 1px solid rgba(42, 54, 96, 0.4); }}
-            QTreeWidget::item:selected {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(0,240,255,0.15), stop:1 rgba(168,85,247,0.08));
-                border-left: 3px solid {C.CYAN};
-            }}
-            QTreeWidget::item:hover {{ background: rgba(0,240,255,0.05); }}
-            QHeaderView::section {{
-                background: {C.PANEL3}; color: {C.CYAN}; border: none;
-                font-family: 'Segoe UI'; font-weight: bold; font-size: 9pt;
-                padding: 6px 8px; border-bottom: 2px solid {C.CYAN};
-            }}
-            QScrollBar:vertical {{ background: {C.PANEL}; width: 6px; border: none; }}
-            QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 3px; min-height: 30px; }}
-            QScrollBar::handle:vertical:hover {{ background: {C.CYAN_D}; }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-        """)
+        self._tree.setStyleSheet(_tree_qss(C.CYAN))
         layout.addWidget(self._tree, 1)
 
         # Bottom bar
@@ -1870,41 +2026,21 @@ class MainWindow(QMainWindow):
         self._sel_label.setStyleSheet(f"color: {C.MUTED}; border: none;")
         act_layout.addWidget(self._sel_label)
 
-        self._btn_delete = QPushButton(T("delete_sel"))
-        self._btn_delete.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self._btn_delete.setCursor(Qt.PointingHandCursor)
-        self._btn_delete.setStyleSheet(f"""
-            QPushButton {{ background: {C.RED}; color: white; border: none; border-radius: 8px; padding: 10px; }}
-            QPushButton:hover {{ background: {C.PINK}; }}
-            QPushButton:disabled {{ background: {C.PANEL2}; color: {C.MUTED}; }}
-        """)
+        self._btn_delete = _make_accent_btn(T("delete_sel"), C.RED, 9, "\U0001f5d1")
         self._btn_delete.setEnabled(False)
         self._btn_delete.clicked.connect(self._delete_selected)
         act_layout.addWidget(self._btn_delete)
 
-        btn_open = QPushButton(T("open_explorer"))
-        btn_open.setFont(QFont("Segoe UI", 8, QFont.Bold))
-        btn_open.setCursor(Qt.PointingHandCursor)
-        btn_open.setStyleSheet(f"""
-            QPushButton {{ background: {C.CYAN}; color: {C.BG}; border: none; border-radius: 8px; padding: 8px; }}
-            QPushButton:hover {{ background: {C.CYAN_D}; }}
-        """)
+        btn_open = _make_accent_btn(T("open_explorer"), C.CYAN, 8, "\U0001f4c2")
         btn_open.clicked.connect(self._open_in_explorer)
         act_layout.addWidget(btn_open)
 
-        btn_sel_all = QPushButton(T("select_all"))
-        btn_sel_all.setFont(QFont("Segoe UI", 8, QFont.Bold))
-        btn_sel_all.setCursor(Qt.PointingHandCursor)
-        btn_sel_all.setStyleSheet(f"""
-            QPushButton {{ background: {C.PANEL2}; color: {C.PINK}; border: 1px solid rgba(255,30,130,0.3); border-radius: 8px; padding: 8px; }}
-            QPushButton:hover {{ background: {C.PINK}; color: white; }}
-        """)
+        btn_sel_all = _make_btn(T("select_all"), C.PINK)
         btn_sel_all.clicked.connect(self._select_all)
         act_layout.addWidget(btn_sel_all)
 
         bottom.addWidget(act_frame, 2)
         layout.addLayout(bottom)
-
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
         return page
 
@@ -1920,7 +2056,6 @@ class MainWindow(QMainWindow):
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.GREEN};")
         layout.addWidget(t)
-
         desc = QLabel(T("boost_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
@@ -1928,13 +2063,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(12)
 
         # Status card
-        status_frame = QFrame()
-        status_frame.setStyleSheet(f"""
-            QFrame {{
-                background: {C.PANEL}; border: 1px solid {C.BORDER};
-                border-radius: 12px; border-left: 4px solid {C.GREEN};
-            }}
-        """)
+        status_frame = _card_frame(C.BORDER, C.GREEN)
         sf_l = QHBoxLayout(status_frame)
         sf_l.setContentsMargins(16, 16, 16, 16)
         self._boost_status = QLabel(T("boost_inactive"))
@@ -1942,27 +2071,14 @@ class MainWindow(QMainWindow):
         self._boost_status.setStyleSheet(f"color: {C.MUTED}; border: none;")
         sf_l.addWidget(self._boost_status)
         sf_l.addStretch()
-        self._boost_btn = QPushButton(T("boost_enable"))
-        self._boost_btn.setFont(QFont("Consolas", 11, QFont.Bold))
-        self._boost_btn.setCursor(Qt.PointingHandCursor)
-        self._boost_btn.setFixedHeight(44)
-        self._boost_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {C.GREEN}, stop:1 {C.CYAN});
-                color: {C.BG}; border: none; border-radius: 10px; padding: 10px 30px;
-            }}
-            QPushButton:hover {{ background: {C.GREEN}; }}
-        """)
+        self._boost_btn = _make_gradient_btn(T("boost_enable"), C.GREEN, C.CYAN, 11, 44, "\U0001f680")
         self._boost_btn.clicked.connect(self._toggle_boost)
         sf_l.addWidget(self._boost_btn)
         layout.addWidget(status_frame)
         layout.addSpacing(12)
 
-        # Boost options
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
         scroll_w = QWidget()
         scroll_l = QVBoxLayout(scroll_w)
         scroll_l.setSpacing(8)
@@ -1980,10 +2096,8 @@ class MainWindow(QMainWindow):
         for key, text, default in boost_options:
             row = QFrame()
             row.setStyleSheet(f"""
-                QFrame {{
-                    background: {C.PANEL}; border: 1px solid {C.BORDER};
-                    border-radius: 8px;
-                }}
+                QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; }}
+                QFrame:hover {{ border-color: {C.GREEN}; }}
             """)
             rl = QHBoxLayout(row)
             rl.setContentsMargins(14, 10, 14, 10)
@@ -1996,16 +2110,12 @@ class MainWindow(QMainWindow):
             self._boost_checks[key] = toggle
             scroll_l.addWidget(row)
 
-        # Performance stats
         stats_label = QLabel(T("boost_stats"))
         stats_label.setFont(QFont("Consolas", 10, QFont.Bold))
         stats_label.setStyleSheet(f"color: {C.GREEN};")
         scroll_l.addWidget(stats_label)
 
-        self._boost_stats_frame = QFrame()
-        self._boost_stats_frame.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; }}
-        """)
+        self._boost_stats_frame = _card_frame()
         bsf_l = QGridLayout(self._boost_stats_frame)
         bsf_l.setContentsMargins(14, 10, 14, 10)
         self._boost_cpu_label = QLabel("CPU: —")
@@ -2017,7 +2127,6 @@ class MainWindow(QMainWindow):
         bsf_l.addWidget(self._boost_cpu_label, 0, 0)
         bsf_l.addWidget(self._boost_ram_label, 0, 1)
         scroll_l.addWidget(self._boost_stats_frame)
-
         scroll_l.addStretch()
         scroll.setWidget(scroll_w)
         layout.addWidget(scroll, 1)
@@ -2045,7 +2154,6 @@ class MainWindow(QMainWindow):
             layout.addStretch()
             return page
 
-        # Graphs
         graphs = QGridLayout()
         graphs.setSpacing(8)
         self._graph_cpu = MiniGraph(T("mon_cpu"), C.CYAN, 100)
@@ -2058,7 +2166,6 @@ class MainWindow(QMainWindow):
         graphs.addWidget(self._graph_net, 1, 1)
         layout.addLayout(graphs)
 
-        # Process table
         proc_header = QHBoxLayout()
         pl = QLabel(T("mon_procs"))
         pl.setFont(QFont("Consolas", 10, QFont.Bold))
@@ -2066,26 +2173,12 @@ class MainWindow(QMainWindow):
         proc_header.addWidget(pl)
         proc_header.addStretch()
 
-        kill_btn = QPushButton(T("mon_kill"))
-        kill_btn.setFont(QFont("Consolas", 8, QFont.Bold))
-        kill_btn.setCursor(Qt.PointingHandCursor)
-        kill_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.RED}; color: white; border: none; border-radius: 6px; padding: 6px 14px; }}
-            QPushButton:hover {{ background: {C.PINK}; }}
-        """)
+        kill_btn = _make_accent_btn(T("mon_kill"), C.RED, 8)
         kill_btn.clicked.connect(self._kill_process)
         proc_header.addWidget(kill_btn)
-
-        refresh_btn = QPushButton(T("mon_refresh"))
-        refresh_btn.setFont(QFont("Consolas", 8, QFont.Bold))
-        refresh_btn.setCursor(Qt.PointingHandCursor)
-        refresh_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.CYAN}; color: {C.BG}; border: none; border-radius: 6px; padding: 6px 14px; }}
-            QPushButton:hover {{ background: {C.CYAN_D}; }}
-        """)
+        refresh_btn = _make_accent_btn(T("mon_refresh"), C.CYAN, 8)
         refresh_btn.clicked.connect(self._refresh_processes)
         proc_header.addWidget(refresh_btn)
-
         layout.addLayout(proc_header)
 
         self._proc_table = QTreeWidget()
@@ -2097,26 +2190,8 @@ class MainWindow(QMainWindow):
         self._proc_table.setRootIsDecorated(False)
         self._proc_table.setSortingEnabled(True)
         self._proc_table.setAlternatingRowColors(True)
-        self._proc_table.setStyleSheet(f"""
-            QTreeWidget {{
-                background: {C.PANEL}; color: {C.TEXT};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                font-family: 'Consolas'; font-size: 9pt;
-                alternate-background-color: {C.PANEL2}; outline: none;
-            }}
-            QTreeWidget::item {{ padding: 3px 4px; }}
-            QTreeWidget::item:selected {{ background: rgba(0,240,255,0.12); border-left: 2px solid {C.CYAN}; }}
-            QHeaderView::section {{
-                background: {C.PANEL3}; color: {C.CYAN}; border: none;
-                font-weight: bold; font-size: 8pt; padding: 5px 6px;
-                border-bottom: 1px solid {C.CYAN};
-            }}
-            QScrollBar:vertical {{ background: {C.PANEL}; width: 6px; border: none; }}
-            QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 3px; }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-        """)
+        self._proc_table.setStyleSheet(_tree_qss(C.PURPLE))
         layout.addWidget(self._proc_table, 1)
-
         return page
 
     # ════════════════════════════════════════════════
@@ -2131,33 +2206,23 @@ class MainWindow(QMainWindow):
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.ORANGE};")
         layout.addWidget(t)
-
         desc = QLabel(T("sec_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
         layout.addSpacing(8)
 
-        # Status badge
-        self._sec_status = QLabel(T("sec_safe"))
+        self._sec_status = QLabel(f"\U0001f7e2  {T('sec_safe')}")
         self._sec_status.setFont(QFont("Consolas", 12, QFont.Bold))
         self._sec_status.setStyleSheet(f"color: {C.GREEN}; background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; padding: 12px;")
         layout.addWidget(self._sec_status)
         layout.addSpacing(8)
 
-        scan_btn = QPushButton(T("sec_scan"))
-        scan_btn.setFont(QFont("Consolas", 11, QFont.Bold))
-        scan_btn.setCursor(Qt.PointingHandCursor)
-        scan_btn.setFixedHeight(44)
-        scan_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.ORANGE}; color: {C.BG}; border: none; border-radius: 10px; padding: 12px; }}
-            QPushButton:hover {{ background: {C.YELLOW}; }}
-        """)
+        scan_btn = _make_accent_btn(T("sec_scan"), C.ORANGE, 10, "\U0001f50d")
         scan_btn.clicked.connect(self._scan_security)
         layout.addWidget(scan_btn)
         layout.addSpacing(8)
 
-        # Startup apps section
         st_label = QLabel(T("sec_startup"))
         st_label.setFont(QFont("Consolas", 10, QFont.Bold))
         st_label.setStyleSheet(f"color: {C.ORANGE};")
@@ -2170,30 +2235,12 @@ class MainWindow(QMainWindow):
         self._sec_tree.setColumnWidth(2, 100)
         self._sec_tree.setRootIsDecorated(False)
         self._sec_tree.setAlternatingRowColors(True)
-        self._sec_tree.setStyleSheet(f"""
-            QTreeWidget {{
-                background: {C.PANEL}; color: {C.TEXT};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                font-family: 'Consolas'; font-size: 9pt;
-                alternate-background-color: {C.PANEL2}; outline: none;
-            }}
-            QTreeWidget::item {{ padding: 4px; }}
-            QTreeWidget::item:selected {{ background: rgba(255,180,60,0.12); }}
-            QHeaderView::section {{
-                background: {C.PANEL3}; color: {C.ORANGE}; border: none;
-                font-weight: bold; font-size: 8pt; padding: 5px 6px;
-                border-bottom: 1px solid {C.ORANGE};
-            }}
-            QScrollBar:vertical {{ background: {C.PANEL}; width: 6px; border: none; }}
-            QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 3px; }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-        """)
+        self._sec_tree.setStyleSheet(_tree_qss(C.ORANGE))
         layout.addWidget(self._sec_tree, 1)
-
         return page
 
     # ════════════════════════════════════════════════
-    #  PAGE: DRIVERS
+    #  PAGE: DRIVERS (v2 — with update detection)
     # ════════════════════════════════════════════════
     def _build_drivers_page(self):
         page = QWidget()
@@ -2204,21 +2251,13 @@ class MainWindow(QMainWindow):
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.CYAN_D};")
         layout.addWidget(t)
-
         desc = QLabel(T("drv_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
         layout.addSpacing(8)
 
-        scan_btn = QPushButton(T("drv_scan"))
-        scan_btn.setFont(QFont("Consolas", 11, QFont.Bold))
-        scan_btn.setCursor(Qt.PointingHandCursor)
-        scan_btn.setFixedHeight(44)
-        scan_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.CYAN_D}; color: {C.BG}; border: none; border-radius: 10px; padding: 12px; }}
-            QPushButton:hover {{ background: {C.CYAN}; }}
-        """)
+        scan_btn = _make_accent_btn(T("drv_scan"), C.CYAN_D, 10, "\U0001f50d")
         scan_btn.clicked.connect(self._scan_drivers)
         layout.addWidget(scan_btn)
         layout.addSpacing(8)
@@ -2228,27 +2267,10 @@ class MainWindow(QMainWindow):
         self._drv_tree.setColumnWidth(0, 400)
         self._drv_tree.setColumnWidth(1, 200)
         self._drv_tree.setColumnWidth(2, 150)
-        self._drv_tree.setColumnWidth(3, 100)
+        self._drv_tree.setColumnWidth(3, 150)
         self._drv_tree.setRootIsDecorated(False)
         self._drv_tree.setAlternatingRowColors(True)
-        self._drv_tree.setStyleSheet(f"""
-            QTreeWidget {{
-                background: {C.PANEL}; color: {C.TEXT};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                font-family: 'Consolas'; font-size: 9pt;
-                alternate-background-color: {C.PANEL2}; outline: none;
-            }}
-            QTreeWidget::item {{ padding: 4px; }}
-            QTreeWidget::item:selected {{ background: rgba(0,184,196,0.12); }}
-            QHeaderView::section {{
-                background: {C.PANEL3}; color: {C.CYAN_D}; border: none;
-                font-weight: bold; font-size: 8pt; padding: 5px 6px;
-                border-bottom: 1px solid {C.CYAN_D};
-            }}
-            QScrollBar:vertical {{ background: {C.PANEL}; width: 6px; border: none; }}
-            QScrollBar::handle:vertical {{ background: {C.BORDER}; border-radius: 3px; }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-        """)
+        self._drv_tree.setStyleSheet(_tree_qss(C.CYAN_D))
         layout.addWidget(self._drv_tree, 1)
         return page
 
@@ -2264,7 +2286,6 @@ class MainWindow(QMainWindow):
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.YELLOW};")
         layout.addWidget(t)
-
         desc = QLabel(T("twk_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
@@ -2273,7 +2294,6 @@ class MainWindow(QMainWindow):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
         scroll_w = QWidget()
         scroll_l = QVBoxLayout(scroll_w)
         scroll_l.setSpacing(6)
@@ -2295,8 +2315,7 @@ class MainWindow(QMainWindow):
              "sc stop SysMain >nul 2>&1 && sc config SysMain start=disabled >nul 2>&1"),
             ("twk_wsearch", "twk_wsearch_d",
              "sc stop WSearch >nul 2>&1 && sc config WSearch start=disabled >nul 2>&1"),
-            ("twk_hibernate", "twk_hibernate_d",
-             "powercfg /h off"),
+            ("twk_hibernate", "twk_hibernate_d", "powercfg /h off"),
             ("twk_network", "twk_network_d",
              'reg add "HKLM\\SOFTWARE\\Microsoft\\MSMQ\\Parameters" /v TCPNoDelay /t REG_DWORD /d 1 /f'),
             ("twk_fastshut", "twk_fastshut_d",
@@ -2304,14 +2323,10 @@ class MainWindow(QMainWindow):
             ("twk_gamemode", "twk_gamemode_d",
              'reg add "HKCU\\Software\\Microsoft\\GameBar" /v AllowAutoGameMode /t REG_DWORD /d 1 /f'),
         ]
-
         for name_key, desc_key, cmd in tweaks:
             row = QFrame()
             row.setStyleSheet(f"""
-                QFrame {{
-                    background: {C.PANEL}; border: 1px solid {C.BORDER};
-                    border-radius: 8px;
-                }}
+                QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; }}
                 QFrame:hover {{ border-color: {C.YELLOW}; }}
             """)
             rl = QHBoxLayout(row)
@@ -2323,16 +2338,13 @@ class MainWindow(QMainWindow):
             desc_lbl = QLabel(T(desc_key))
             desc_lbl.setFont(QFont("Segoe UI", 8))
             desc_lbl.setStyleSheet(f"color: {C.MUTED}; border: none;")
-            info.addWidget(name_lbl)
-            info.addWidget(desc_lbl)
+            info.addWidget(name_lbl); info.addWidget(desc_lbl)
             rl.addLayout(info, 1)
-
             toggle = ToggleSwitch(False)
             toggle.toggled.connect(lambda checked, c=cmd, n=name_key: self._apply_tweak(c, n, checked))
             rl.addWidget(toggle)
             scroll_l.addWidget(row)
 
-        # Quick actions
         qa_label = QLabel(T("twk_quick"))
         qa_label.setFont(QFont("Consolas", 10, QFont.Bold))
         qa_label.setStyleSheet(f"color: {C.YELLOW};")
@@ -2347,16 +2359,7 @@ class MainWindow(QMainWindow):
             ("Flush DNS", "ipconfig /flushdns"),
         ]
         for label, cmd in quick_actions:
-            btn = QPushButton(f"  ▶ {label}")
-            btn.setFont(QFont("Consolas", 9))
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background: {C.PANEL2}; color: {C.CYAN}; border: none;
-                    border-radius: 6px; padding: 8px; text-align: left;
-                }}
-                QPushButton:hover {{ background: {C.PANEL3}; }}
-            """)
+            btn = _make_btn(f"▶  {label}", C.CYAN, size=8, bold=False)
             btn.clicked.connect(lambda checked=False, c=cmd: subprocess.Popen(c, shell=True))
             scroll_l.addWidget(btn)
 
@@ -2377,14 +2380,12 @@ class MainWindow(QMainWindow):
         t.setFont(QFont("Consolas", 16, QFont.Bold))
         t.setStyleSheet(f"color: {C.PINK};")
         layout.addWidget(t)
-
         desc = QLabel(T("plg_desc"))
         desc.setFont(QFont("Segoe UI", 10))
         desc.setStyleSheet(f"color: {C.DIM};")
         layout.addWidget(desc)
         layout.addSpacing(8)
 
-        # Template buttons
         tmpl_row = QHBoxLayout()
         tmpl_label = QLabel(T("plg_templates") + ":")
         tmpl_label.setFont(QFont("Consolas", 8, QFont.Bold))
@@ -2398,20 +2399,13 @@ class MainWindow(QMainWindow):
             T("plg_netinfo"): "try:\n    import psutil\n    net = psutil.net_io_counters()\n    print(f'Sent: {net.bytes_sent//1024**2} MB')\n    print(f'Recv: {net.bytes_recv//1024**2} MB')\nexcept: print('psutil not available')\n",
         }
         for name, code in templates.items():
-            btn = QPushButton(name)
-            btn.setFont(QFont("Consolas", 8))
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.setStyleSheet(f"""
-                QPushButton {{ background: {C.PANEL2}; color: {C.PINK}; border: 1px solid {C.BORDER}; border-radius: 6px; padding: 4px 10px; }}
-                QPushButton:hover {{ background: {C.PINK}; color: white; }}
-            """)
+            btn = _make_btn(name, C.PINK, size=8)
             btn.clicked.connect(lambda checked=False, c=code: self._plg_editor.setPlainText(c))
             tmpl_row.addWidget(btn)
         tmpl_row.addStretch()
         layout.addLayout(tmpl_row)
         layout.addSpacing(4)
 
-        # Editor
         el = QLabel(T("plg_editor"))
         el.setFont(QFont("Consolas", 8, QFont.Bold))
         el.setStyleSheet(f"color: {C.PINK};")
@@ -2422,42 +2416,22 @@ class MainWindow(QMainWindow):
         self._plg_editor.setStyleSheet(f"""
             QPlainTextEdit {{
                 background: {C.PANEL}; color: {C.TEXT};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                padding: 8px;
+                border: 1px solid {C.BORDER}; border-radius: 8px; padding: 8px;
             }}
         """)
         self._plg_editor.setPlainText("# Write your Python script here\nprint('Hello from s0meClean!')\n")
         layout.addWidget(self._plg_editor, 2)
 
-        # Buttons
         btn_row = QHBoxLayout()
-        run_btn = QPushButton(T("plg_run"))
-        run_btn.setFont(QFont("Consolas", 11, QFont.Bold))
-        run_btn.setCursor(Qt.PointingHandCursor)
-        run_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {C.GREEN}, stop:1 {C.CYAN});
-                color: {C.BG}; border: none; border-radius: 8px; padding: 10px 30px;
-            }}
-            QPushButton:hover {{ background: {C.GREEN}; }}
-        """)
+        run_btn = _make_gradient_btn(T("plg_run"), C.GREEN, C.CYAN, 11, 40, "▶")
         run_btn.clicked.connect(self._run_plugin)
         btn_row.addWidget(run_btn)
-
-        clear_btn = QPushButton(T("plg_clear"))
-        clear_btn.setFont(QFont("Consolas", 9, QFont.Bold))
-        clear_btn.setCursor(Qt.PointingHandCursor)
-        clear_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.PANEL2}; color: {C.MUTED}; border: 1px solid {C.BORDER}; border-radius: 8px; padding: 10px 20px; }}
-            QPushButton:hover {{ color: {C.RED}; border-color: {C.RED}; }}
-        """)
+        clear_btn = _make_btn(T("plg_clear"), C.MUTED)
         clear_btn.clicked.connect(lambda: self._plg_output.clear())
         btn_row.addWidget(clear_btn)
         btn_row.addStretch()
         layout.addLayout(btn_row)
 
-        # Output
         ol = QLabel(T("plg_output"))
         ol.setFont(QFont("Consolas", 8, QFont.Bold))
         ol.setStyleSheet(f"color: {C.GREEN};")
@@ -2469,11 +2443,77 @@ class MainWindow(QMainWindow):
         self._plg_output.setStyleSheet(f"""
             QPlainTextEdit {{
                 background: {C.BG2}; color: {C.GREEN};
-                border: 1px solid {C.BORDER}; border-radius: 8px;
-                padding: 8px;
+                border: 1px solid {C.BORDER}; border-radius: 8px; padding: 8px;
             }}
         """)
         layout.addWidget(self._plg_output, 1)
+        return page
+
+    # ════════════════════════════════════════════════
+    #  PAGE: AI COMMAND TERMINAL (NEW)
+    # ════════════════════════════════════════════════
+    def _build_terminal_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(8)
+
+        t = QLabel(T("term_title"))
+        t.setFont(QFont("Consolas", 16, QFont.Bold))
+        t.setStyleSheet(f"color: {C.GREEN};")
+        layout.addWidget(t)
+        desc = QLabel(T("term_desc"))
+        desc.setFont(QFont("Segoe UI", 10))
+        desc.setStyleSheet(f"color: {C.DIM};")
+        layout.addWidget(desc)
+        layout.addSpacing(4)
+
+        # Terminal output
+        self._term_output = QPlainTextEdit()
+        self._term_output.setFont(QFont("Consolas", 10))
+        self._term_output.setReadOnly(True)
+        self._term_output.setStyleSheet(f"""
+            QPlainTextEdit {{
+                background: {C.BG2}; color: {C.GREEN};
+                border: 1px solid {C.BORDER}; border-radius: 10px; padding: 12px;
+                selection-background-color: rgba(0,240,255,0.2);
+            }}
+        """)
+        self._term_output.setPlainText(T("term_welcome"))
+        layout.addWidget(self._term_output, 1)
+
+        # Input row
+        input_row = QHBoxLayout()
+        input_row.setSpacing(8)
+
+        prompt_lbl = QLabel(">")
+        prompt_lbl.setFont(QFont("Consolas", 14, QFont.Bold))
+        prompt_lbl.setStyleSheet(f"color: {C.CYAN};")
+        prompt_lbl.setFixedWidth(20)
+        input_row.addWidget(prompt_lbl)
+
+        self._term_input = QLineEdit()
+        self._term_input.setPlaceholderText(T("term_input"))
+        self._term_input.setFont(QFont("Consolas", 12))
+        self._term_input.setStyleSheet(f"""
+            QLineEdit {{
+                background: {C.PANEL}; color: {C.GREEN};
+                border: 1px solid {C.BORDER}; border-radius: 8px;
+                padding: 10px 14px;
+                selection-background-color: rgba(0,240,255,0.2);
+            }}
+            QLineEdit:focus {{
+                border-color: {C.CYAN};
+            }}
+        """)
+        self._term_input.returnPressed.connect(self._execute_terminal_command)
+        input_row.addWidget(self._term_input, 1)
+
+        send_btn = _make_gradient_btn("EXEC", C.GREEN, C.CYAN, 10, 40)
+        send_btn.setFixedWidth(100)
+        send_btn.clicked.connect(self._execute_terminal_command)
+        input_row.addWidget(send_btn)
+        layout.addLayout(input_row)
         return page
 
     # ════════════════════════════════════════════════
@@ -2491,10 +2531,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(12)
 
         # Language card
-        lang_card = QFrame()
-        lang_card.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; border-left: 4px solid {C.PURPLE}; }}
-        """)
+        lang_card = _card_frame(C.BORDER, C.PURPLE)
         lang_l = QVBoxLayout(lang_card)
         lang_l.setContentsMargins(16, 12, 16, 12)
         lang_t = QLabel(T("language"))
@@ -2506,8 +2543,7 @@ class MainWindow(QMainWindow):
         self._lang_combo.addItem("English", "EN")
         self._lang_combo.addItem("Русский", "RU")
         idx_lang = self._lang_combo.findData(LANG)
-        if idx_lang >= 0:
-            self._lang_combo.setCurrentIndex(idx_lang)
+        if idx_lang >= 0: self._lang_combo.setCurrentIndex(idx_lang)
         self._lang_combo.setFont(QFont("Consolas", 11))
         self._lang_combo.setStyleSheet(f"""
             QComboBox {{ background: {C.PANEL2}; color: {C.CYAN}; border: 1px solid {C.BORDER}; border-radius: 6px; padding: 6px 12px; min-width: 160px; }}
@@ -2520,17 +2556,13 @@ class MainWindow(QMainWindow):
         self._lang_hint.setFont(QFont("Segoe UI", 9))
         self._lang_hint.setStyleSheet(f"color: {C.MUTED}; border: none;")
         self._lang_hint.setVisible(False)
-        lang_row.addWidget(self._lang_hint)
-        lang_row.addStretch()
+        lang_row.addWidget(self._lang_hint); lang_row.addStretch()
         lang_l.addLayout(lang_row)
         layout.addWidget(lang_card)
         layout.addSpacing(8)
 
         # About card
-        about = QFrame()
-        about.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; border-left: 4px solid {C.GREEN}; }}
-        """)
+        about = _card_frame(C.BORDER, C.GREEN)
         al = QVBoxLayout(about)
         al.setContentsMargins(16, 12, 16, 12)
         at = QLabel(T("about"))
@@ -2546,36 +2578,26 @@ class MainWindow(QMainWindow):
         layout.addSpacing(8)
 
         # Key activation
-        key_card = QFrame()
-        key_card.setStyleSheet(f"""
-            QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; border-left: 4px solid {C.CYAN}; }}
-        """)
+        key_card = _card_frame(C.BORDER, C.CYAN)
         kl = QVBoxLayout(key_card)
         kl.setContentsMargins(16, 12, 16, 12)
         kt = QLabel(T("access_key"))
         kt.setFont(QFont("Consolas", 11, QFont.Bold))
         kt.setStyleSheet(f"color: {C.CYAN}; border: none;")
         kl.addWidget(kt)
-
         key_row = QHBoxLayout()
         self._key_input = QLineEdit()
         self._key_input.setPlaceholderText("XXXXX-XXXXX-XXXXX-XXXXX-XXXXX")
         self._key_input.setFont(QFont("Consolas", 12))
         self._key_input.setStyleSheet(f"""
             QLineEdit {{ background: {C.PANEL2}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 6px; padding: 8px; letter-spacing: 2px; }}
+            QLineEdit:focus {{ border-color: {C.CYAN}; }}
         """)
         key_row.addWidget(self._key_input, 1)
-        activate_btn = QPushButton(T("activate"))
-        activate_btn.setFont(QFont("Consolas", 10, QFont.Bold))
-        activate_btn.setCursor(Qt.PointingHandCursor)
-        activate_btn.setStyleSheet(f"""
-            QPushButton {{ background: {C.CYAN}; color: {C.BG}; border: none; border-radius: 6px; padding: 8px 20px; }}
-            QPushButton:hover {{ background: {C.CYAN_D}; }}
-        """)
+        activate_btn = _make_accent_btn(T("activate"), C.CYAN, 10)
         activate_btn.clicked.connect(self._activate_key)
         key_row.addWidget(activate_btn)
         kl.addLayout(key_row)
-
         self._key_status = QLabel(T("key_none"))
         self._key_status.setFont(QFont("Consolas", 9))
         self._key_status.setStyleSheet(f"color: {C.MUTED}; border: none;")
@@ -2586,7 +2608,9 @@ class MainWindow(QMainWindow):
         layout.addStretch()
         return page
 
-    # ── STATUS BAR ──
+    # ══════════════════════════════════════════════
+    #  STATUS BAR
+    # ══════════════════════════════════════════════
     def _build_statusbar(self, parent_layout):
         sb = QFrame()
         sb.setFixedHeight(32)
@@ -2609,103 +2633,67 @@ class MainWindow(QMainWindow):
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
         sbl.addWidget(self._status_label)
         sbl.addStretch()
-
-        # Mini CPU/RAM in status bar
         self._sb_cpu = QLabel("CPU: —")
         self._sb_cpu.setFont(QFont("Consolas", 8))
         self._sb_cpu.setStyleSheet(f"color: {C.DIM};")
         self._sb_ram = QLabel("RAM: —")
         self._sb_ram.setFont(QFont("Consolas", 8))
         self._sb_ram.setStyleSheet(f"color: {C.DIM};")
-        sbl.addWidget(self._sb_cpu)
-        sbl.addSpacing(10)
-        sbl.addWidget(self._sb_ram)
-
+        sbl.addWidget(self._sb_cpu); sbl.addSpacing(10); sbl.addWidget(self._sb_ram)
         parent_layout.addWidget(sb)
 
     # ═══════════════════════════════════════════════════
-    #  ACTIONS
+    #  ACTIONS / TAB SWITCH
     # ═══════════════════════════════════════════════════
     def _switch_tab(self, key):
         pages = {"clean": 0, "boost": 1, "monitor": 2, "security": 3,
-                 "drivers": 4, "tweaks": 5, "plugins": 6, "settings": 7}
+                 "drivers": 4, "tweaks": 5, "plugins": 6, "terminal": 7, "settings": 8}
         self._stack.setCurrentIndex(pages.get(key, 0))
         for k, btn in self._sidebar_btns.items():
             btn.set_active(k == key)
         self._rebuild_actions(key)
-
-        # Load processes when switching to monitor
         if key == "monitor" and HAS_PSUTIL:
             self._refresh_processes()
 
     def _rebuild_actions(self, tab):
         while self._action_container.count():
             w = self._action_container.takeAt(0).widget()
-            if w:
-                w.deleteLater()
+            if w: w.deleteLater()
 
         if tab == "clean":
             actions = [
-                (T("quick_audit"), C.GREEN, True, lambda: self._start_scan("audit")),
-                (T("largest_folders"), C.CYAN, False, lambda: self._start_scan("largefolders")),
-                (T("phantom_progs"), C.RED, False, lambda: self._start_scan("phantoms")),
-                (T("orphan_folders"), C.CYAN, False, lambda: self._start_scan("orphans")),
-                (T("large_files"), C.CYAN, False, lambda: self._start_scan("largefiles")),
-                (T("installed_progs"), C.PINK, False, lambda: self._start_scan("installed")),
-                (T("junk_temp"), C.ORANGE, False, lambda: self._start_scan("junk")),
-                (T("recycle_bin"), C.PINK, False, lambda: self._start_scan("recyclebin")),
-                (T("hiberfil"), C.YELLOW, False, lambda: self._start_scan("hibernation")),
-                (T("browser_cache"), C.PURPLE, False, lambda: self._start_scan("browser")),
-            ]
-        elif tab == "clean_custom":
-            actions = [
-                (T("scan_go"), C.PINK, True, lambda: self._start_scan("custom", self._custom_path_val if hasattr(self, '_custom_path_val') else "")),
+                (T("quick_audit"), C.GREEN, True, lambda: self._start_scan("audit"), "⚡"),
+                (T("largest_folders"), C.CYAN, False, lambda: self._start_scan("largefolders"), "\U0001f4c1"),
+                (T("phantom_progs"), C.RED, False, lambda: self._start_scan("phantoms"), "\U0001f47b"),
+                (T("orphan_folders"), C.CYAN, False, lambda: self._start_scan("orphans"), "\U0001f517"),
+                (T("large_files"), C.CYAN, False, lambda: self._start_scan("largefiles"), "\U0001f4e6"),
+                (T("installed_progs"), C.PINK, False, lambda: self._start_scan("installed"), "\U0001f4be"),
+                (T("junk_temp"), C.ORANGE, False, lambda: self._start_scan("junk"), "\U0001f5d1"),
+                (T("recycle_bin"), C.PINK, False, lambda: self._start_scan("recyclebin"), "♻"),
+                (T("hiberfil"), C.YELLOW, False, lambda: self._start_scan("hibernation"), "\U0001f4a4"),
+                (T("browser_cache"), C.PURPLE, False, lambda: self._start_scan("browser"), "\U0001f310"),
             ]
         else:
             actions = []
 
-        for text, color, bold, callback in actions:
-            btn = QPushButton(text)
-            btn.setFont(QFont("Consolas", 8, QFont.Bold if bold else QFont.Normal))
-            btn.setCursor(Qt.PointingHandCursor)
+        for text, color, bold, callback, icon in actions:
             if bold:
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                            stop:0 {color}, stop:1 rgba(0,0,0,0.1));
-                        color: {C.BG}; border: none; border-radius: 8px; padding: 8px; text-align: left;
-                    }}
-                    QPushButton:hover {{ background: {color}; }}
-                """)
+                btn = _make_gradient_btn(f"{icon}  {text}", color, QColor(color).darker(150).name(), 8, 36)
             else:
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        background: {C.PANEL2}; color: {color};
-                        border: 1px solid rgba(42,54,96,0.5);
-                        border-radius: 8px; padding: 6px 8px; text-align: left;
-                    }}
-                    QPushButton:hover {{
-                        background: {color}; color: {C.BG}; border-color: {color};
-                    }}
-                """)
+                btn = _make_btn(f"{icon}  {text}", color, size=8, bold=False)
             btn.clicked.connect(callback)
             self._action_container.addWidget(btn)
 
     # ── SCAN MANAGEMENT ──
     def _start_scan(self, scan_type, extra=None):
         if self._worker and self._worker.isRunning():
-            self._worker.cancel()
-            self._worker.wait(2000)
-
+            self._worker.cancel(); self._worker.wait(2000)
         self._scan_items.clear()
-        self._tree.clear()
-        self._log_text.clear()
-        self._progress.setValue(0)
-        self._result_info.setText("")
+        self._tree.clear(); self._log_text.clear()
+        self._progress.setValue(0); self._result_info.setText("")
         self._rec_text.setText(T("scanning"))
         self._btn_delete.setEnabled(False)
         self._sel_label.setText(T("scanning"))
-
         drive = self._drive_combo.currentText()
         self._worker = ScanWorker(scan_type, drive, extra)
         self._worker.progress.connect(self._on_progress)
@@ -2713,7 +2701,6 @@ class MainWindow(QMainWindow):
         self._worker.log_msg.connect(self._on_log)
         self._worker.finished_scan.connect(self._on_scan_done)
         self._worker.start()
-
         self._status_label.setText(T("scanning_t", t=scan_type))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
         self._switch_tab("clean")
@@ -2727,11 +2714,9 @@ class MainWindow(QMainWindow):
         idx = len(self._scan_items)
         tw = QTreeWidgetItem([str(idx), format_size(item.size), item.path, item.details])
         tw.setData(1, Qt.UserRole, item.size)
-        colors = {
-            "junk": C.ORANGE, "phantom": C.RED, "hibernation": C.YELLOW,
-            "recyclebin": C.PINK, "orphan": C.CYAN, "browser": C.PURPLE,
-            "installed": C.TEXT, "folder": C.TEXT, "file": C.DIM,
-        }
+        colors = {"junk": C.ORANGE, "phantom": C.RED, "hibernation": C.YELLOW,
+                  "recyclebin": C.PINK, "orphan": C.CYAN, "browser": C.PURPLE,
+                  "installed": C.TEXT, "folder": C.TEXT, "file": C.DIM}
         c = QColor(colors.get(item.item_type, C.TEXT))
         for col in range(4):
             tw.setForeground(col, c)
@@ -2771,138 +2756,104 @@ class MainWindow(QMainWindow):
             if idx < len(self._scan_items):
                 path = self._scan_items[idx].path
                 if os.path.exists(path):
-                    if os.path.isdir(path):
-                        os.startfile(path)
-                    else:
-                        subprocess.Popen(f'explorer /select,"{path}"')
+                    if os.path.isdir(path): os.startfile(path)
+                    else: subprocess.Popen(f'explorer /select,"{path}"')
 
     def _delete_selected(self):
         sel = self._tree.selectedItems()
-        if not sel:
-            return
+        if not sel: return
         n = len(sel)
         r = QMessageBox.question(self, T("confirm_del_t"), T("confirm_del_m", n=n),
                                  QMessageBox.Yes | QMessageBox.No)
-        if r != QMessageBox.Yes:
-            return
-
+        if r != QMessageBox.Yes: return
         ok, fail, freed = 0, 0, 0
         for it in sel:
             idx = int(it.text(0)) - 1
-            if idx >= len(self._scan_items):
-                continue
+            if idx >= len(self._scan_items): continue
             item = self._scan_items[idx]
             try:
                 if item.item_type == "phantom" and item.extra:
                     parts = item.extra.split("\\")
-                    if "WOW6432Node" in item.extra:
-                        hkey = winreg.HKEY_LOCAL_MACHINE
-                    elif "HKCU" in item.extra or "HKEY_CURRENT_USER" in item.extra:
+                    hkey = winreg.HKEY_LOCAL_MACHINE
+                    if "HKCU" in item.extra or "HKEY_CURRENT_USER" in item.extra:
                         hkey = winreg.HKEY_CURRENT_USER
-                    else:
-                        hkey = winreg.HKEY_LOCAL_MACHINE
                     subpath = "\\".join(parts[:-1])
                     key_name = parts[-1]
                     try:
                         parent = winreg.OpenKey(hkey, subpath.split("\\", 1)[-1] if "\\" in subpath else subpath, 0, winreg.KEY_ALL_ACCESS)
                         winreg.DeleteKey(parent, key_name)
                         winreg.CloseKey(parent)
-                        ok += 1
-                        freed += item.size
-                    except Exception:
-                        fail += 1
+                        ok += 1; freed += item.size
+                    except Exception: fail += 1
                 elif item.item_type == "recyclebin":
                     subprocess.run(["powershell", "-NoProfile", "-Command", "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"],
                                    capture_output=True, timeout=30)
-                    ok += 1
-                    freed += item.size
+                    ok += 1; freed += item.size
                 elif item.item_type == "hibernation":
                     subprocess.run(["powercfg", "/h", "off"], capture_output=True, timeout=15)
-                    ok += 1
-                    freed += item.size
+                    ok += 1; freed += item.size
                 elif item.item_type == "installed" and item.extra:
-                    subprocess.Popen(item.extra, shell=True)
-                    ok += 1
+                    subprocess.Popen(item.extra, shell=True); ok += 1
                 elif os.path.isdir(item.path):
                     shutil.rmtree(item.path, ignore_errors=True)
-                    ok += 1
-                    freed += item.size
+                    ok += 1; freed += item.size
                 elif os.path.isfile(item.path):
                     os.remove(item.path)
-                    ok += 1
-                    freed += item.size
-                else:
-                    fail += 1
+                    ok += 1; freed += item.size
+                else: fail += 1
             except Exception as e:
-                self._on_log(f"DELETE FAIL: {item.path} — {e}")
-                fail += 1
-
+                self._on_log(f"DELETE FAIL: {item.path} — {e}"); fail += 1
         QMessageBox.information(self, T("result_title"), T("result_msg", ok=ok, fail=fail, freed=format_size(freed)))
         self._update_disk_info()
 
     # ── GAME BOOST ──
     def _toggle_boost(self):
-        if self._game_mode_active:
-            self._disable_boost()
-        else:
-            self._enable_boost()
+        if self._game_mode_active: self._disable_boost()
+        else: self._enable_boost()
 
     def _enable_boost(self):
         applied = 0
         checks = self._boost_checks
-
         if checks["power"].isChecked():
             try:
                 subprocess.run("powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", shell=True, capture_output=True, timeout=10)
                 applied += 1
-            except Exception:
-                pass
-
+            except Exception: pass
         if checks["services"].isChecked():
-            services = ["SysMain", "DiagTrack", "WSearch"]
-            for svc in services:
+            for svc in ["SysMain", "DiagTrack", "WSearch"]:
                 try:
                     subprocess.run(f"sc stop {svc}", shell=True, capture_output=True, timeout=10)
                     applied += 1
-                except Exception:
-                    pass
-
+                except Exception: pass
         if checks["ram"].isChecked():
             try:
-                subprocess.run("powershell -NoProfile -Command \"[System.GC]::Collect()\"", shell=True, capture_output=True, timeout=10)
+                subprocess.run('powershell -NoProfile -Command "[System.GC]::Collect()"', shell=True, capture_output=True, timeout=10)
                 applied += 1
-            except Exception:
-                pass
-
+            except Exception: pass
         if checks["anim"].isChecked():
             try:
                 subprocess.run('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f',
                              shell=True, capture_output=True, timeout=10)
                 applied += 1
-            except Exception:
-                pass
-
+            except Exception: pass
         if checks["nagle"].isChecked():
             try:
+                # Full Nagle disable on all interfaces
                 subprocess.run('reg add "HKLM\\SOFTWARE\\Microsoft\\MSMQ\\Parameters" /v TCPNoDelay /t REG_DWORD /d 1 /f',
                              shell=True, capture_output=True, timeout=10)
                 applied += 1
-            except Exception:
-                pass
-
+            except Exception: pass
         if checks["overlay"].isChecked():
-            if not self._overlay:
-                self._overlay = OverlayWindow()
+            if not self._overlay: self._overlay = OverlayWindow()
             self._overlay.show()
 
         self._game_mode_active = True
         self._boost_status.setText(T("boost_active"))
         self._boost_status.setStyleSheet(f"color: {C.GREEN}; border: none;")
-        self._boost_btn.setText(T("boost_disable"))
+        self._boost_btn.setText(f"  ⏹  {T('boost_disable')}")
         self._boost_btn.setStyleSheet(f"""
             QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {C.RED}, stop:1 {C.PINK});
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {C.RED}, stop:1 {C.PINK});
                 color: white; border: none; border-radius: 10px; padding: 10px 30px;
             }}
             QPushButton:hover {{ background: {C.RED}; }}
@@ -2911,25 +2862,17 @@ class MainWindow(QMainWindow):
         self._status_label.setStyleSheet(f"color: {C.GREEN};")
 
     def _disable_boost(self):
-        # Restore services
-        services = ["SysMain", "WSearch"]
-        for svc in services:
-            try:
-                subprocess.run(f"sc start {svc}", shell=True, capture_output=True, timeout=10)
-            except Exception:
-                pass
-
-        if self._overlay:
-            self._overlay.hide()
-
+        for svc in ["SysMain", "WSearch"]:
+            try: subprocess.run(f"sc start {svc}", shell=True, capture_output=True, timeout=10)
+            except Exception: pass
+        if self._overlay: self._overlay.hide()
         self._game_mode_active = False
         self._boost_status.setText(T("boost_inactive"))
         self._boost_status.setStyleSheet(f"color: {C.MUTED}; border: none;")
-        self._boost_btn.setText(T("boost_enable"))
+        self._boost_btn.setText(f"  \U0001f680  {T('boost_enable')}")
         self._boost_btn.setStyleSheet(f"""
             QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {C.GREEN}, stop:1 {C.CYAN});
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {C.GREEN}, stop:1 {C.CYAN});
                 color: {C.BG}; border: none; border-radius: 10px; padding: 10px 30px;
             }}
             QPushButton:hover {{ background: {C.GREEN}; }}
@@ -2949,58 +2892,47 @@ class MainWindow(QMainWindow):
         ram_used = stats.get("ram_used", 0)
         ram_total = stats.get("ram_total", 1)
 
-        # Status bar
         self._sb_cpu.setText(f"CPU: {cpu:.0f}%")
         self._sb_cpu.setStyleSheet(f"color: {C.RED if cpu > 80 else C.CYAN};")
         self._sb_ram.setText(f"RAM: {ram_pct:.0f}%")
         self._sb_ram.setStyleSheet(f"color: {C.RED if ram_pct > 85 else C.PURPLE};")
 
-        # Graphs
         if hasattr(self, '_graph_cpu'):
             self._graph_cpu.add_value(cpu)
             self._graph_cpu.set_text(f"{cpu:.0f}%")
             self._graph_ram.add_value(ram_pct)
             self._graph_ram.set_text(f"{format_size(ram_used)}/{format_size(ram_total)}")
 
-            # Disk I/O rate
             disk_read = stats.get("disk_read", 0)
             disk_write = stats.get("disk_write", 0)
             if self._prev_disk_io is not None:
-                dr = (disk_read - self._prev_disk_io[0]) / 1024 / 1024  # MB/s
+                dr = (disk_read - self._prev_disk_io[0]) / 1024 / 1024
                 dw = (disk_write - self._prev_disk_io[1]) / 1024 / 1024
-                disk_rate = dr + dw
-                self._graph_disk.add_value(min(disk_rate * 10, 100))
+                self._graph_disk.add_value(min((dr + dw) * 10, 100))
                 self._graph_disk.set_text(f"R:{dr:.1f} W:{dw:.1f} MB/s")
             self._prev_disk_io = (disk_read, disk_write)
 
-            # Network rate
             net_sent = stats.get("net_sent", 0)
             net_recv = stats.get("net_recv", 0)
             if self._prev_net_io is not None:
-                ns = (net_sent - self._prev_net_io[0]) / 1024  # KB/s
+                ns = (net_sent - self._prev_net_io[0]) / 1024
                 nr = (net_recv - self._prev_net_io[1]) / 1024
-                net_rate = ns + nr
-                self._graph_net.add_value(min(net_rate / 10, 100))
+                self._graph_net.add_value(min((ns + nr) / 10, 100))
                 self._graph_net.set_text(f"↑{ns:.0f} ↓{nr:.0f} KB/s")
             self._prev_net_io = (net_sent, net_recv)
 
-        # Boost page stats
         if hasattr(self, '_boost_cpu_label'):
             self._boost_cpu_label.setText(f"CPU: {cpu:.0f}%")
             self._boost_ram_label.setText(f"RAM: {ram_pct:.0f}%")
 
-        # Overlay
         if self._overlay and self._overlay.isVisible():
             self._overlay.set_stats({
-                "cpu": cpu,
-                "ram": ram_pct,
-                "gpu": "N/A",
-                "net": f"{self._graph_net._current_text}" if hasattr(self, '_graph_net') else "—",
+                "cpu": cpu, "ram": ram_pct, "gpu": "N/A",
+                "net": self._graph_net._current_text if hasattr(self, '_graph_net') else "—",
             })
 
     def _refresh_processes(self):
-        if not HAS_PSUTIL:
-            return
+        if not HAS_PSUTIL: return
         self._proc_table.clear()
         try:
             procs = []
@@ -3009,31 +2941,26 @@ class MainWindow(QMainWindow):
                     info = proc.info
                     mem = info['memory_info'].rss if info['memory_info'] else 0
                     procs.append((info['name'] or "—", info['pid'], info.get('cpu_percent', 0) or 0, mem))
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
             procs.sort(key=lambda x: x[3], reverse=True)
             for name, pid, cpu_p, mem in procs[:150]:
                 tw = QTreeWidgetItem([name, str(pid), f"{cpu_p:.1f}", format_size(mem)])
                 tw.setData(2, Qt.UserRole, cpu_p)
                 tw.setData(3, Qt.UserRole, mem)
                 self._proc_table.addTopLevelItem(tw)
-        except Exception:
-            pass
+        except Exception: pass
 
     def _kill_process(self):
-        if not HAS_PSUTIL:
-            return
+        if not HAS_PSUTIL: return
         sel = self._proc_table.selectedItems()
-        if not sel:
-            return
+        if not sel: return
         pid = int(sel[0].text(1))
         name = sel[0].text(0)
         r = QMessageBox.question(self, T("confirm_title"), f"Kill process {name} (PID: {pid})?",
                                  QMessageBox.Yes | QMessageBox.No)
         if r == QMessageBox.Yes:
             try:
-                proc = psutil.Process(pid)
-                proc.kill()
+                psutil.Process(pid).kill()
                 self._refresh_processes()
             except Exception as e:
                 QMessageBox.warning(self, "Error", str(e))
@@ -3042,8 +2969,6 @@ class MainWindow(QMainWindow):
     def _scan_security(self):
         self._sec_tree.clear()
         warnings = 0
-
-        # Check startup items
         startup_locations = [
             (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKCU\\Run"),
             (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKLM\\Run"),
@@ -3062,13 +2987,10 @@ class MainWindow(QMainWindow):
                         tw.setForeground(2, QColor(C.GREEN))
                         self._sec_tree.addTopLevelItem(tw)
                         i += 1
-                    except OSError:
-                        break
+                    except OSError: break
                 winreg.CloseKey(key)
-            except OSError:
-                pass
+            except OSError: pass
 
-        # Check for suspicious processes
         if HAS_PSUTIL:
             suspicious_names = {"cryptominer", "miner", "xmrig", "coinhive", "nicehash"}
             for proc in psutil.process_iter(['name', 'pid', 'cpu_percent']):
@@ -3081,26 +3003,24 @@ class MainWindow(QMainWindow):
                         tw.setForeground(2, QColor(C.RED))
                         self._sec_tree.addTopLevelItem(tw)
                         warnings += 1
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
 
         if warnings > 0:
-            self._sec_status.setText(T("sec_warning"))
+            self._sec_status.setText(f"\U0001f7e1  {T('sec_warning')}")
             self._sec_status.setStyleSheet(f"color: {C.YELLOW}; background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; padding: 12px;")
         else:
-            self._sec_status.setText(T("sec_safe"))
+            self._sec_status.setText(f"\U0001f7e2  {T('sec_safe')}")
             self._sec_status.setStyleSheet(f"color: {C.GREEN}; background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 8px; padding: 12px;")
 
-    # ── DRIVERS ──
+    # ── DRIVERS (v2 — with update detection) ──
     def _scan_drivers(self):
         self._drv_tree.clear()
         try:
             result = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
-                 "Get-WmiObject Win32_PnPSignedDriver | Where-Object { $_.DeviceName -ne $null } | "
+                 "Get-CimInstance Win32_PnPSignedDriver | Where-Object { $_.DeviceName -ne $null } | "
                  "Select-Object DeviceName, DriverVersion, DriverDate | ConvertTo-Csv -NoTypeInformation"],
-                capture_output=True, text=True, timeout=30
-            )
+                capture_output=True, text=True, timeout=30)
             lines = result.stdout.strip().split('\n')
             if len(lines) > 1:
                 for line in lines[1:]:
@@ -3109,13 +3029,20 @@ class MainWindow(QMainWindow):
                         name = parts[0].strip('"')
                         version = parts[1].strip('"') if len(parts) > 1 else "—"
                         date_raw = parts[2].strip('"') if len(parts) > 2 else "—"
-                        # Parse date
                         date_str = date_raw[:8] if len(date_raw) >= 8 and date_raw[:4].isdigit() else date_raw
                         if len(date_str) == 8 and date_str.isdigit():
                             date_str = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
 
-                        tw = QTreeWidgetItem([name, version, date_str, T("drv_ok")])
-                        tw.setForeground(3, QColor(C.GREEN))
+                        # Check for updates
+                        has_update, latest_ver, catalog_name = _check_driver_update(name, version)
+                        if has_update:
+                            status_text = f"⚡ {T('drv_update')} → {latest_ver}"
+                            tw = QTreeWidgetItem([name, version, date_str, status_text])
+                            tw.setForeground(3, QColor(C.ORANGE))
+                            tw.setForeground(0, QColor(C.YELLOW))
+                        else:
+                            tw = QTreeWidgetItem([name, version, date_str, T("drv_ok")])
+                            tw.setForeground(3, QColor(C.GREEN))
                         self._drv_tree.addTopLevelItem(tw)
         except Exception as e:
             tw = QTreeWidgetItem([f"Error: {e}", "", "", ""])
@@ -3163,6 +3090,142 @@ class MainWindow(QMainWindow):
         self._status_label.setText(T("plg_done"))
         self._status_label.setStyleSheet(f"color: {C.GREEN};")
 
+    # ── AI TERMINAL ──
+    def _execute_terminal_command(self):
+        raw = self._term_input.text().strip()
+        if not raw: return
+        self._term_input.clear()
+        self._term_output.appendPlainText(f"\n> {raw}")
+        cmd = raw.lower()
+
+        def _log(msg):
+            QTimer.singleShot(0, lambda: self._term_output.appendPlainText(msg))
+
+        def _run():
+            try:
+                # system info
+                if re.search(r"system\s*info|sysinfo|my\s*pc|computer\s*info", cmd):
+                    _log(f"[OS] {platform.system()} {platform.release()} ({platform.version()})")
+                    _log(f"[Machine] {platform.machine()}")
+                    _log(f"[Processor] {platform.processor()}")
+                    _log(f"[User] {os.getlogin()}")
+                    if HAS_PSUTIL:
+                        mem = psutil.virtual_memory()
+                        _log(f"[RAM] {format_size(mem.total)} total, {format_size(mem.used)} used ({mem.percent}%)")
+                        _log(f"[CPU Cores] {psutil.cpu_count(logical=False)} physical, {psutil.cpu_count()} logical")
+                    return
+
+                # scan/check folder
+                m = re.search(r"(?:check|scan|size\s*of)\s+(.+?)(?:\s+folder)?$", cmd)
+                if m:
+                    target = m.group(1).strip()
+                    # Try common game paths
+                    search_dirs = [
+                        os.path.join(r"C:\Program Files (x86)\Steam\steamapps\common", target),
+                        os.path.join(r"C:\Program Files\Steam\steamapps\common", target),
+                        os.path.join(r"D:\SteamLibrary\steamapps\common", target),
+                        os.path.join(r"C:\Games", target),
+                        os.path.join(os.path.expanduser("~"), "Desktop", target),
+                    ]
+                    found = None
+                    for sd in search_dirs:
+                        if os.path.isdir(sd):
+                            found = sd; break
+                    # Also try direct path
+                    if not found and os.path.isdir(target):
+                        found = target
+
+                    if found:
+                        _log(f"[Found] {found}")
+                        _log("[Calculating size...]")
+                        sz = get_folder_size(found)
+                        _log(f"[Size] {format_size(sz)}")
+                        # Top subfolders
+                        try:
+                            subs = []
+                            for name in os.listdir(found):
+                                fp = os.path.join(found, name)
+                                if os.path.isdir(fp):
+                                    ssz = get_folder_size(fp, max_files=10000)
+                                    subs.append((name, ssz))
+                            subs.sort(key=lambda x: x[1], reverse=True)
+                            if subs:
+                                _log("[Top subfolders]")
+                                for name, ssz in subs[:10]:
+                                    _log(f"  {format_size(ssz):>12}  {name}")
+                        except Exception: pass
+                    else:
+                        _log(f"[Not Found] Could not locate '{target}' in common paths.")
+                    return
+
+                # clean temp
+                if re.search(r"clean\s*(temp|temporary|junk|cache|memory)", cmd):
+                    _log("[Cleaning temporary files...]")
+                    cleaned = 0
+                    for p in [os.environ.get("TEMP",""), r"C:\Windows\Temp"]:
+                        if p and os.path.isdir(p):
+                            for f in os.listdir(p):
+                                fp = os.path.join(p, f)
+                                try:
+                                    if os.path.isfile(fp):
+                                        sz = os.path.getsize(fp)
+                                        os.remove(fp)
+                                        cleaned += sz
+                                    elif os.path.isdir(fp):
+                                        sz = get_folder_size(fp, max_files=1000)
+                                        shutil.rmtree(fp, ignore_errors=True)
+                                        cleaned += sz
+                                except Exception: pass
+                    _log(f"[Done] Cleaned {format_size(cleaned)}")
+                    return
+
+                # kill heavy
+                if re.search(r"kill\s*(heavy|top|resource|hog)", cmd):
+                    if not HAS_PSUTIL:
+                        _log("[Error] psutil not installed"); return
+                    _log("[Scanning for resource-heavy processes...]")
+                    procs = []
+                    for proc in psutil.process_iter(['name', 'pid', 'memory_info']):
+                        try:
+                            info = proc.info
+                            mem = info['memory_info'].rss if info['memory_info'] else 0
+                            procs.append((info['name'], info['pid'], mem))
+                        except (psutil.NoSuchProcess, psutil.AccessDenied): pass
+                    procs.sort(key=lambda x: x[2], reverse=True)
+                    skip = {"system", "registry", "csrss.exe", "smss.exe", "wininit.exe",
+                            "services.exe", "lsass.exe", "svchost.exe", "explorer.exe",
+                            "dwm.exe", "winlogon.exe", "s0meclean.exe"}
+                    top3 = [p for p in procs if p[0] and p[0].lower() not in skip][:3]
+                    if top3:
+                        _log("[Top 3 resource consumers]")
+                        for name, pid, mem in top3:
+                            _log(f"  {name} (PID: {pid}) — {format_size(mem)}")
+                        _log("[Use 'kill <name>' to terminate a specific process]")
+                    return
+
+                # scan disk
+                m2 = re.search(r"scan\s*disk\s*([A-Za-z])", cmd)
+                if m2:
+                    drive = m2.group(1).upper() + ":"
+                    if os.path.isdir(drive + "\\"):
+                        t, u, f = shutil.disk_usage(drive + "\\")
+                        _log(f"[Disk {drive}]")
+                        _log(f"  Total: {format_size(t)}")
+                        _log(f"  Used:  {format_size(u)} ({u*100//t}%)")
+                        _log(f"  Free:  {format_size(f)} ({f*100//t}%)")
+                    else:
+                        _log(f"[Error] Drive {drive} not found")
+                    return
+
+                # Fallback
+                _log(f"[?] Unknown command: '{raw}'")
+                _log("[Hint] Try: system info | check <folder> | clean temp | kill heavy | scan disk C")
+
+            except Exception as e:
+                _log(f"[Error] {e}")
+
+        threading.Thread(target=_run, daemon=True).start()
+
     # ── DISK INFO ──
     def _update_disk_info(self):
         drive = self._drive_combo.currentText()
@@ -3171,15 +3234,11 @@ class MainWindow(QMainWindow):
             self._stat_total.set_value(f"{total / 1024**3:.1f} GB")
             self._stat_used.set_value(f"{used / 1024**3:.1f} GB")
             pct_free = (free / total) * 100
-            self._stat_free.set_value(f"{free / 1024**3:.1f} GB ({pct_free:.1f}%)")
-            if pct_free < 10:
-                self._stat_free.set_color(C.RED)
-            elif pct_free < 20:
-                self._stat_free.set_color(C.ORANGE)
-            else:
-                self._stat_free.set_color(C.GREEN)
-        except Exception:
-            pass
+            self._stat_free.set_value(f"{free / 1024**3:.1f} GB")
+            if pct_free < 10: self._stat_free.set_color(C.RED)
+            elif pct_free < 20: self._stat_free.set_color(C.ORANGE)
+            else: self._stat_free.set_color(C.GREEN)
+        except Exception: pass
 
     def _on_drive_changed(self, text):
         self._update_disk_info()
@@ -3187,8 +3246,7 @@ class MainWindow(QMainWindow):
     # ── KEY ACTIVATION ──
     def _activate_key(self):
         key = self._key_input.text().strip()
-        if not key:
-            return
+        if not key: return
         if len(key.replace("-", "")) >= 20:
             self._key_status.setText(f"{T('key_active')} {key[:10]}...")
             self._key_status.setStyleSheet(f"color: {C.GREEN}; border: none;")
@@ -3202,65 +3260,44 @@ class MainWindow(QMainWindow):
         try:
             data = {}
             if os.path.exists(cfg):
-                with open(cfg, "r") as f:
-                    data = json.load(f)
+                with open(cfg, "r") as f: data = json.load(f)
             data["key"] = key
-            with open(cfg, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception:
-            pass
+            with open(cfg, "w") as f: json.dump(data, f, indent=2)
+        except Exception: pass
 
     def _load_key(self):
         cfg = os.path.join(app_dir(), "config.json")
         try:
             if os.path.exists(cfg):
-                with open(cfg, "r") as f:
-                    data = json.load(f)
+                with open(cfg, "r") as f: data = json.load(f)
                 key = data.get("key", "")
                 if key:
                     self._key_input.setText(key)
                     self._key_status.setText(f"{T('key_active')} {key[:10]}...")
                     self._key_status.setStyleSheet(f"color: {C.GREEN}; border: none;")
-        except Exception:
-            pass
+        except Exception: pass
 
-    # ── AUTO-UPDATER ──
+    # ── AUTO-UPDATER (v2 — threaded) ──
     def _check_update(self):
         self._status_label.setText(T("checking_upd"))
         self._status_label.setStyleSheet(f"color: {C.CYAN};")
-        try:
-            self._update_result.disconnect()
-        except Exception:
-            pass
-        self._update_result.connect(self._on_update_result)
+        self._updater = UpdateCheckerThread(VERSION)
+        self._updater.status_signal.connect(self._on_update_status)
+        self._updater.update_found_signal.connect(self._on_update_found)
+        self._updater.start()
 
-        def _thread():
-            try:
-                req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "s0meClean"})
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    data = json.loads(resp.read().decode())
-                remote = data.get("tag_name", "").lstrip("v")
-                if remote and remote != VERSION:
-                    self._update_result.emit(remote)
-                    return
-            except Exception:
-                pass
-            self._update_result.emit("")
+    def _on_update_status(self, msg):
+        self._status_label.setText(msg)
 
-        threading.Thread(target=_thread, daemon=True).start()
+    def _on_update_found(self, ver, url):
+        r = QMessageBox.question(self, T("upd_available_t"),
+                                 T("upd_available_m", ver=ver, cur=VERSION),
+                                 QMessageBox.Yes | QMessageBox.No)
+        if r == QMessageBox.Yes:
+            self._apply_update(url)
 
-    def _on_update_result(self, ver):
-        if ver:
-            r = QMessageBox.question(self, T("upd_available_t"),
-                                     T("upd_available_m", ver=ver, cur=VERSION),
-                                     QMessageBox.Yes | QMessageBox.No)
-            if r == QMessageBox.Yes:
-                self._apply_update()
-        else:
-            self._status_label.setText(f"{T('up_to_date')} (v{VERSION})")
-            self._status_label.setStyleSheet(f"color: {C.GREEN};")
-
-    def _apply_update(self):
+    def _apply_update(self, download_url=None):
+        url = download_url or UPDATE_URL
         self._status_label.setText(T("downloading"))
         self._status_label.setStyleSheet(f"color: {C.ORANGE};")
 
@@ -3269,7 +3306,7 @@ class MainWindow(QMainWindow):
                 import tempfile
                 tmp = tempfile.mkdtemp()
                 zip_path = os.path.join(tmp, "update.zip")
-                urllib.request.urlretrieve(UPDATE_URL, zip_path)
+                urllib.request.urlretrieve(url, zip_path)
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmp)
                 os.remove(zip_path)
@@ -3277,25 +3314,21 @@ class MainWindow(QMainWindow):
                 children = os.listdir(tmp)
                 if len(children) == 1:
                     candidate = os.path.join(tmp, children[0])
-                    if os.path.isdir(candidate):
-                        src_dir = candidate
+                    if os.path.isdir(candidate): src_dir = candidate
                 target = app_dir()
                 for item in os.listdir(src_dir):
                     s = os.path.join(src_dir, item)
                     d = os.path.join(target, item)
                     try:
                         if os.path.isdir(s):
-                            if os.path.exists(d):
-                                shutil.rmtree(d, ignore_errors=True)
+                            if os.path.exists(d): shutil.rmtree(d, ignore_errors=True)
                             shutil.copytree(s, d)
                         else:
                             shutil.copy2(s, d)
-                    except Exception:
-                        pass
+                    except Exception: pass
                 shutil.rmtree(tmp, ignore_errors=True)
                 return True
-            except Exception:
-                return False
+            except Exception: return False
 
         def _done(success):
             if success:
@@ -3320,16 +3353,12 @@ class MainWindow(QMainWindow):
             try:
                 data = {}
                 if os.path.exists(cfg):
-                    with open(cfg, "r", encoding="utf-8") as f:
-                        data = json.load(f)
+                    with open(cfg, "r", encoding="utf-8") as f: data = json.load(f)
                 data["language"] = new_lang
-                with open(cfg, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2, ensure_ascii=False)
-            except Exception:
-                pass
+                with open(cfg, "w", encoding="utf-8") as f: json.dump(data, f, indent=2, ensure_ascii=False)
+            except Exception: pass
             self._lang_hint.setVisible(True)
 
-    # ── Resize background ──
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "_bg"):
@@ -3347,6 +3376,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+    app.setStyleSheet(GLOBAL_QSS)
 
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(C.BG))
