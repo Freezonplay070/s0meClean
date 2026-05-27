@@ -1,0 +1,7 @@
+PyQt6>=6.6
+PyQt6-Fluent-Widgets>=1.4
+qtawesome>=1.3
+requests>=2.31
+psutil>=5.9
+BlurWindow>=1.2
+packaging>=23.2

@@ -1,0 +1,67 @@
+/* ============================================================
+   Sidebar — branded vertical nav with animated indicator pill.
+   Active state styled via :checked. Gradient indicator widget
+   is painted programmatically (see Sidebar._Indicator).
+   ============================================================ */
+
+#sidebar {
+    background: @bg_elev;
+    border: 0;
+}
+
+#brandLabel {
+    color: @accent;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+#brandSub {
+    color: @accent_2;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+}
+
+#sectionHeader {
+    color: @text_muted;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    padding-left: 6px;
+}
+
+#versionLabel {
+    color: @text_muted;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 10px;
+    padding-left: 6px;
+}
+
+/* ----- nav buttons ----- */
+QPushButton#navButton {
+    background: transparent;
+    color: @text_dim;
+    border: 0;
+    border-radius: 10px;
+    padding-left: 18px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+QPushButton#navButton:hover {
+    background: @bg_hover;
+    color: @text;
+}
+QPushButton#navButton:checked {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+        stop:0 rgba(0,229,255,0.16),
+        stop:1 rgba(255,0,85,0.06));
+    color: @accent;
+}
+QPushButton#navButton:checked:hover {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+        stop:0 rgba(0,229,255,0.24),
+        stop:1 rgba(255,0,85,0.10));
+}
